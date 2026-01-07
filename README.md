@@ -20,11 +20,11 @@ A comprehensive Django-based web application for managing government/council ten
 
 
 ## login credentials
-#council
+# council
 username = council1
 pass = sagar@123#
 
-#contractor
+# contractor
 username = contractor1
 password = sagar@123#
 ## ✨ Features

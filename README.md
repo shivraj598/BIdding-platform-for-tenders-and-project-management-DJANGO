@@ -51,9 +51,10 @@ A comprehensive Django-based web application for managing government/council ten
 | **Django 5.2.6** | Web Framework |
 | **Python 3.14** | Programming Language |
 | **SQLite** | Database (Development) |
+| **Tailwind CSS** | Utility-First CSS Framework |
+| **Lucide Icons** | Modern Icon Library |
 | **HTML5/CSS3** | Frontend Templates |
 | **JavaScript** | Interactive Features |
-| **Bootstrap** | UI Components |
 | **ReportLab** | PDF Generation |
 
 ## 📁 Project Structure

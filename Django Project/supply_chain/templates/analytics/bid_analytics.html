@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Bid Analytics & Recommendations{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% endif %}
+
+    <div class="flex-1">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">Bid Analytics & AI Recommendations</h1>
+                    <p class="text-slate-600 mt-2">Intelligent insights and recommendations for bid evaluation</p>
+                </div>
+                
+                <!-- Last Updated -->
+                <div class="bg-emerald-50 px-4 py-2 rounded-lg">
+                    <p class="text-sm text-slate-600">Last Updated</p>
+                    <p class="font-bold text-dark-green">{{ last_updated|date:"M d, Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Pending Bids</p>
+                        <h2 class="text-3xl font-bold text-dark-green mt-1">{{ stats.pending_bids }}</h2>
+                    </div>
+                    <div class="bg-emerald-100 p-3 rounded-xl">
+                        <i data-lucide="clock" class="w-6 h-6 text-dark-green"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Avg. Bid Amount</p>
+                        <h2 class="text-3xl font-bold text-blue-600 mt-1">${{ stats.avg_bid|floatformat:0 }}</h2>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-xl">
+                        <i data-lucide="dollar-sign" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Success Rate</p>
+                        <h2 class="text-3xl font-bold text-emerald-600 mt-1">{{ stats.success_rate }}%</h2>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-xl">
+                        <i data-lucide="trending-up" class="w-6 h-6 text-emerald-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Savings Potential</p>
+                        <h2 class="text-3xl font-bold text-amber-600 mt-1">${{ stats.savings_potential|floatformat:0 }}</h2>
+                    </div>
+                    <div class="bg-amber-100 p-3 rounded-xl">
+                        <i data-lucide="piggy-bank" class="w-6 h-6 text-amber-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Recommendations -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="bg-purple-100 p-3 rounded-lg">
+                            <i data-lucide="brain" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">AI Bid Recommendations</h2>
+                            <p class="text-slate-600">Intelligent suggestions for optimal bid selection</p>
+                        </div>
+                    </div>
+                    
+                    {% if recommendations %}
+                        <div class="space-y-6">
+                            {% for recommendation in recommendations %}
+                            <div class="border border-slate-200 rounded-xl p-6 hover:bg-slate-50 transition">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center 
+                                            {% if recommendation.priority == 'high' %}bg-red-100 text-red-600
+                                            {% elif recommendation.priority == 'medium' %}bg-amber-100 text-amber-600
+                                            {% else %}bg-emerald-100 text-emerald-600{% endif %}">
+                                            <i data-lucide="{% if recommendation.priority == 'high' %}alert-triangle{% else %}check-circle{% endif %}" 
+                                               class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-800">{{ recommendation.title }}</h3>
+                                            <p class="text-sm text-slate-600">{{ recommendation.package.title }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-medium px-3 py-1 rounded-full 
+                                        {% if recommendation.priority == 'high' %}bg-red-100 text-red-800
+                                        {% elif recommendation.priority == 'medium' %}bg-amber-100 text-amber-800
+                                        {% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                                        {{ recommendation.get_priority_display }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h4 class="font-medium text-slate-700 mb-2">Recommendation:</h4>
+                                    <p class="text-slate-600">{{ recommendation.description }}</p>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                                    <div>
+                                        <p class="text-slate-500">Recommended Bid</p>
+                                        <p class="font-bold text-dark-green">${{ recommendation.recommended_bid.bid_amount }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-slate-500">Contractor</p>
+                                        <p class="font-medium">{{ recommendation.recommended_bid.contractor.username }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                                    <div class="text-xs text-slate-500">
+                                        Confidence: <span class="font-bold text-emerald-600">{{ recommendation.confidence }}%</span>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <a href="{% url 'bid_review' recommendation.recommended_bid.id %}" 
+                                           class="text-dark-green hover:underline font-medium text-sm">
+                                            Review Bid
+                                        </a>
+                                        <a href="{% url 'bid_accept' recommendation.recommended_bid.id %}" 
+                                           class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green text-sm">
+                                            Accept Recommendation
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i data-lucide="bar-chart" class="w-16 h-16 text-slate-300 mx-auto mb-4"></i>
+                            <h3 class="text-lg font-bold text-slate-700 mb-2">No Recommendations Yet</h3>
+                            <p class="text-slate-600 mb-6">AI recommendations will appear here once you have sufficient bid data.</p>
+                            <a href="{% url 'bid_review_list' %}" 
+                               class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                                Review Pending Bids
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Bid Comparison Matrix -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Bid Comparison Matrix</h2>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">Package</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">Lowest Bid</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">Avg. Bid</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">Highest Bid</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">Bid Count</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-700">AI Score</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for comparison in bid_comparisons %}
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-slate-800">{{ comparison.package.title|truncatechars:30 }}</div>
+                                        <div class="text-xs text-slate-500">{{ comparison.package.project.title|truncatechars:20 }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-bold text-emerald-600">${{ comparison.lowest_bid }}</div>
+                                        <div class="text-xs text-slate-500">{{ comparison.lowest_contractor|truncatechars:15 }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-bold text-blue-600">${{ comparison.average_bid|floatformat:0 }}</div>
+                                        <div class="text-xs text-slate-500">±${{ comparison.std_deviation|floatformat:0 }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-bold text-amber-600">${{ comparison.highest_bid }}</div>
+                                        <div class="text-xs text-slate-500">{{ comparison.highest_contractor|truncatechars:15 }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium">{{ comparison.bid_count }}</div>
+                                        {% if comparison.bid_count < 3 %}
+                                            <div class="text-xs text-red-500">Low competition</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                                <div class="bg-emerald-600 h-2 rounded-full" 
+                                                     style="width: {{ comparison.ai_score }}%"></div>
+                                            </div>
+                                            <span class="ml-2 text-sm font-bold text-emerald-600">{{ comparison.ai_score }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="px-4 py-12 text-center text-slate-500">
+                                        No bid comparison data available
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Analytics -->
+            <div class="space-y-8">
+                <!-- Contractor Performance -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                        Top Performing Contractors
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        {% for contractor in top_contractors %}
+                        <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="user" class="w-4 h-4 text-dark-green"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-800">{{ contractor.username|truncatechars:15 }}</p>
+                                    <p class="text-xs text-slate-500">{{ contractor.experience_years }} years exp.</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-emerald-600">{{ contractor.success_rate }}%</p>
+                                <p class="text-xs text-slate-500">Success rate</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-slate-500 text-center py-4">No contractor data available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Package Type Analysis -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="package" class="w-4 h-4"></i>
+                        Package Type Analysis
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        {% for analysis in package_analysis %}
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium text-slate-700">{{ analysis.package_type }}</span>
+                                <span class="text-sm font-bold text-dark-green">{{ analysis.avg_bids }} bids</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" 
+                                     style="width: {{ analysis.competition_level }}%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>Avg. bid: ${{ analysis.avg_amount|floatformat:0 }}</span>
+                                <span>{{ analysis.competition_level }}% competition</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-slate-500 text-center py-4">No package analysis data</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- AI Insights -->
+                <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                    <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        AI Insights
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        {% for insight in ai_insights %}
+                        <div class="bg-white p-4 rounded-xl border border-emerald-100">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="lightbulb" class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-slate-800 mb-1">{{ insight.title }}</p>
+                                    <p class="text-xs text-slate-600">{{ insight.description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="bg-white p-4 rounded-xl border border-emerald-100">
+                            <p class="text-sm text-slate-600 text-center">No AI insights available yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'bid_review_list' %}?status=pending" 
+                           class="block w-full bg-dark-green text-white px-4 py-3 rounded-lg font-medium hover-bg-green text-center">
+                            Review Pending Bids
+                        </a>
+                        <a href="{% url 'report_create' %}" 
+                           class="block w-full bg-white border border-dark-green text-dark-green px-4 py-3 rounded-lg font-medium hover:bg-emerald-50 text-center">
+                            Generate Report
+                        </a>
+                        <a href="#" 
+                           class="block w-full bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-medium hover:bg-slate-50 text-center">
+                            Export Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom styling for AI score bars */
+    .ai-score-bar {
+        transition: width 0.5s ease-in-out;
+    }
+</style>
+
+<script>
+    // Refresh analytics data
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-refresh every 5 minutes
+        setInterval(function() {
+            console.log('Refreshing analytics data...');
+            // In a real implementation, this would fetch updated data via AJAX
+        }, 300000);
+        
+        // Highlight high-priority recommendations
+        const highPriorityItems = document.querySelectorAll('[data-priority="high"]');
+        highPriorityItems.forEach(item => {
+            item.closest('.border').classList.add('border-red-200', 'bg-red-50');
+        });
+    });
+</script>
+{% endblock %}

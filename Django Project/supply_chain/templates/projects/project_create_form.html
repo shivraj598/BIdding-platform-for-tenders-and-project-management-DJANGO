@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create New Project | Leeds Supply Chain{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% include 'includes/council_sidebar.html' %}
+    
+    <div class="flex-1">
+        <div class="py-8">
+            <div class="max-w-4xl mx-auto px-4">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="{% url 'project_list' %}" class="inline-flex items-center gap-2 text-slate-600 hover:text-dark-green transition font-medium">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Projects
+            </a>
+        </div>
+        
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
+            <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'project_list' %}" class="hover:text-dark-green">Projects</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span class="text-dark-green font-medium">Create New Project</span>
+        </nav>
+        
+        <!-- Form Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+            <div class="bg-dark-green text-white p-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-white/20 p-3 rounded-xl">
+                        <i data-lucide="plus" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Create New Project</h1>
+                        <p class="text-emerald-200 mt-1">Publish a new infrastructure project for contractors to bid on</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Project Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <form method="POST" class="space-y-8">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                            <span class="font-medium">Please correct the errors below:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Basic Information -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="info" class="w-5 h-5 text-dark-green"></i>
+                        Basic Information
+                    </h2>
+                    
+                    <!-- Title -->
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Project Title *
+                        </label>
+                        <input type="text" id="{{ form.title.id_for_label }}" name="title" 
+                               value="{{ form.title.value|default:'' }}" required
+                               class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                               placeholder="Enter a descriptive project title">
+                        {% if form.title.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.title.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Project Description *
+                        </label>
+                        <textarea id="{{ form.description.id_for_label }}" name="description" rows="6" required
+                                  class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                  placeholder="Provide detailed project description including scope, objectives, and requirements...">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">Include all relevant details that contractors need to know.</p>
+                    </div>
+                    
+                    <!-- Location and Budget -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Location *
+                            </label>
+                            <input type="text" id="{{ form.location.id_for_label }}" name="location" 
+                                   value="{{ form.location.value|default:'' }}" required
+                                   class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                   placeholder="City, State, or specific address">
+                            {% if form.location.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.location.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.budget_range.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Budget Range (Optional)
+                            </label>
+                            <input type="text" id="{{ form.budget_range.id_for_label }}" name="budget_range" 
+                                   value="{{ form.budget_range.value|default:'' }}"
+                                   class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                   placeholder="e.g., $50,000 - $100,000">
+                            {% if form.budget_range.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.budget_range.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timeline -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5 text-dark-green"></i>
+                        Project Timeline
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Start Date -->
+                        <div>
+                            <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Start Date *
+                            </label>
+                            <div class="relative">
+                                <input type="date" id="{{ form.start_date.id_for_label }}" name="start_date" 
+                                       value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" required
+                                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition">
+                                <i data-lucide="calendar" class="absolute right-3 top-3 w-5 h-5 text-slate-400"></i>
+                            </div>
+                            {% if form.start_date.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.start_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- End Date -->
+                        <div>
+                            <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                End Date *
+                            </label>
+                            <div class="relative">
+                                <input type="date" id="{{ form.end_date.id_for_label }}" name="end_date" 
+                                       value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" required
+                                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition">
+                                <i data-lucide="calendar" class="absolute right-3 top-3 w-5 h-5 text-slate-400"></i>
+                            </div>
+                            {% if form.end_date.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.end_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-medium mb-1">Timeline Guidance</p>
+                                <p>Set realistic dates considering planning, bidding, and execution phases. Contractors will use these dates to plan their bids.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status and Publishing -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-5 h-5 text-dark-green"></i>
+                        Status & Publishing
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Status -->
+                        <div>
+                            <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Project Status *
+                            </label>
+                            <select id="{{ form.status.id_for_label }}" name="status" 
+                                    class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white">
+                                {% for value, label in form.fields.status.choices %}
+                                    <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.status.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.status.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end">
+                    <a href="{% url 'project_list' %}" 
+                       class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-dark-green text-white px-8 py-3 rounded-xl font-bold hover-bg-green shadow-lg transition-all flex items-center gap-2 justify-center">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Form Tips -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-dark-green p-2 rounded-lg">
+                        <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-dark-green">Clear Description</h4>
+                </div>
+                <p class="text-sm text-slate-700">Provide detailed scope and requirements to help contractors submit accurate bids.</p>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i data-lucide="calendar" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-blue-800">Realistic Timeline</h4>
+                </div>
+                <p class="text-sm text-slate-700">Set achievable dates considering all phases from bidding to project completion.</p>
+            </div>
+            
+            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-amber-600 p-2 rounded-lg">
+                        <i data-lucide="package" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-amber-800">Add Packages</h4>
+                </div>
+                <p class="text-sm text-slate-700">After creating the project, add specific work packages for different types of work.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Date validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+        const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Set min date to today for start date
+        if (startDateInput) {
+            startDateInput.min = today;
+        }
+        
+        // Update end date min when start date changes
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+            });
+            
+            // Set initial min for end date
+            if (startDateInput.value) {
+                endDateInput.min = startDateInput.value;
+            }
+        }
+        
+        // Auto-focus first input
+        const firstInput = document.querySelector('form input[required]');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    });
+</script>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

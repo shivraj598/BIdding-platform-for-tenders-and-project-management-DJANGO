@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Leeds Supply Chain | Project Management System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .bg-dark-green { background-color: #064E3B; }
+        .text-dark-green { color: #064E3B; }
+        .border-dark-green { border-color: #064E3B; }
+        .hover-bg-green:hover { background-color: #053d2e; }
+        .bg-emerald-50 { background-color: #ecfdf5; }
+        .bg-emerald-100 { background-color: #d1fae5; }
+        
+        [x-cloak] { display: none !important; }
+        
+        /* Messages styling */
+        .messages-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        
+        .alert-success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .alert-error {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .alert-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-900">
+    
+    <!-- NAVIGATION BAR -->
+    <nav class="bg-dark-green text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo -->
+                <a href="{% url 'home' %}" class="flex items-center gap-2 cursor-pointer">
+                    <div class="bg-white p-1 rounded">
+                        <i data-lucide="shield-check" class="text-dark-green w-6 h-6"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Leeds Supply Chain </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="{% url 'home' %}" class="hover:text-emerald-200 transition">Home</a>
+                    
+                    {% if user.is_authenticated %}
+                        {% if user.profile.user_type == 'council' %}
+                            <a href="{% url 'council_dashboard' %}" class="hover:text-emerald-200 transition">Dashboard</a>
+                            <a href="{% url 'project_list' %}" class="hover:text-emerald-200 transition">Projects</a>
+                        {% elif user.profile.user_type == 'contractor' %}
+                            <a href="{% url 'contractor_dashboard' %}" class="hover:text-emerald-200 transition">Dashboard</a>
+                            <a href="{% url 'available_projects' %}" class="hover:text-emerald-200 transition">Browse Projects</a>
+                            <a href="{% url 'my_bids' %}" class="hover:text-emerald-200 transition">My Bids</a>
+                        {% endif %}
+                        
+                        <!-- User Dropdown -->
+                        <div class="relative ml-4" id="user-dropdown">
+                            <button id="user-dropdown-button" class="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                {{ user.username }}
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </button>
+                            <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 hidden">
+                                <a href="{% url 'profile' %}" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Profile</a>
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 text-slate-700 hover:bg-slate-100">Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Login/Register for non-authenticated users -->
+                        <a href="{% url 'login' %}" class="bg-white text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 transition">Login</a>
+                        <a href="{% url 'contractor_register' %}" class="border border-white px-4 py-2 rounded-lg font-medium hover:bg-white/10 transition">Register as Contractor</a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile menu button -->
+                <button id="mobile-menu-button" class="md:hidden">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="md:hidden hidden py-4 border-t border-emerald-800">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'home' %}" class="block py-2 hover:text-emerald-200">Home</a>
+                    {% if user.profile.user_type == 'council' %}
+                        <a href="{% url 'council_dashboard' %}" class="block py-2 hover:text-emerald-200">Dashboard</a>
+                        <a href="{% url 'project_list' %}" class="block py-2 hover:text-emerald-200">Projects</a>
+                    {% elif user.profile.user_type == 'contractor' %}
+                        <a href="{% url 'contractor_dashboard' %}" class="block py-2 hover:text-emerald-200">Dashboard</a>
+                        <a href="{% url 'available_projects' %}" class="block py-2 hover:text-emerald-200">Browse Projects</a>
+                        <a href="{% url 'my_bids' %}" class="block py-2 hover:text-emerald-200">My Bids</a>
+                    {% endif %}
+                    <a href="{% url 'profile' %}" class="block py-2 hover:text-emerald-200">Profile</a>
+                    <a href="{% url 'logout' %}" class="block py-2 hover:text-emerald-200">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="block py-2 hover:text-emerald-200">Login</a>
+                    <a href="{% url 'contractor_register' %}" class="block py-2 hover:text-emerald-200">Register as Contractor</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages/Alerts -->
+    <div class="messages-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-{{ message.tags }} rounded-lg shadow-lg p-4 mb-2 transform transition-all duration-300 ease-in-out">
+                    <div class="flex items-center gap-2">
+                        {% if message.tags == 'success' %}
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        {% elif message.tags == 'error' %}
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        {% else %}
+                            <i data-lucide="info" class="w-5 h-5"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-green text-white mt-20 py-8">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="bg-white p-1 rounded">
+                            <i data-lucide="shield-check" class="text-dark-green w-6 h-6"></i>
+                        </div>
+                        <span class="text-xl font-bold">Leeds Supply Chain </span>
+                    </div>
+                    <p class="text-emerald-200 text-sm">Streamlining public infrastructure tenders for councils and contractors.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-emerald-200 text-sm">
+                        <li><a href="#" class="hover:text-white">About Us</a></li>
+                        <li><a href="#" class="hover:text-white">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white">Contact</a></li>
+                        <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Contact Info</h4>
+                    <div class="space-y-2 text-emerald-200 text-sm">
+                        <p class="flex items-center gap-2">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            support@leedssupplychain.com
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i data-lucide="phone" class="w-4 h-4"></i>
+                            +1 (555) 123-4567
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            123 Government St, City
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-emerald-800 mt-8 pt-8 text-center text-emerald-300 text-sm">
+                <p>&copy; {% now "Y" %} Leeds Supply Chain . All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // User dropdown toggle
+        const userDropdownButton = document.getElementById('user-dropdown-button');
+        const userDropdownMenu = document.getElementById('user-dropdown-menu');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        if (userDropdownButton) {
+            userDropdownButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdownMenu.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userDropdown.contains(e.target)) {
+                    userDropdownMenu.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Auto-hide messages after 5 seconds
+        setTimeout(function() {
+            const messages = document.querySelectorAll('.messages-container > div');
+            messages.forEach(function(msg) {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

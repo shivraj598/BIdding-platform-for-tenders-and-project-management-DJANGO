@@ -1,0 +1,603 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Review Bid{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+                <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'bid_review_list' %}" class="hover:text-dark-green">Bid Review</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-dark-green font-medium">Review Bid #{{ bid.id|slice:"-8:"|upper }}</span>
+            </nav>
+            
+            <!-- Bid Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h1 class="text-3xl font-bold text-slate-800">Bid Review</h1>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full 
+                            {% if bid.status == 'pending' %}bg-amber-100 text-amber-800
+                            {% elif bid.status == 'under_review' %}bg-blue-100 text-blue-800
+                            {% elif bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                            {% elif bid.status == 'rejected' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ bid.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="package" class="w-4 h-4"></i>
+                            <span>Package: {{ bid.package.title }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="building-2" class="w-4 h-4"></i>
+                            <span>Project: {{ bid.package.project.title }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span>Contractor: {{ bid.contractor.profile.company_name|default:bid.contractor.username }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Submitted: {{ bid.submitted_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    {% if bid.status in 'submitted,under_review' %}
+                        <a href="{% url 'bid_accept' bid.id %}" 
+                           class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 flex items-center gap-2"
+                           onclick="return confirm('Accept this bid and award the package to this contractor?')">
+                            <i data-lucide="check" class="w-4 h-4"></i> Accept Bid
+                        </a>
+                        <a href="{% url 'bid_reject' bid.id %}" 
+                           class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 flex items-center gap-2"
+                           onclick="return confirm('Reject this bid? This action cannot be undone.')">
+                            <i data-lucide="x" class="w-4 h-4"></i> Reject Bid
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'bid_review_list' %}" 
+                       class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Bid Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Contractor Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="user" class="w-5 h-5 text-dark-green"></i>
+                        Contractor Information
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    {% if bid.contractor.profile.profile_picture %}
+                                        <img src="{{ bid.contractor.profile.profile_picture.url }}" 
+                                             alt="{{ bid.contractor.username }}"
+                                             class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i data-lucide="user" class="w-8 h-8 text-dark-green"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-800">{{ bid.contractor.profile.company_name|default:bid.contractor.username }}</h3>
+                                    <p class="text-slate-600">Registered since {{ bid.contractor.date_joined|date:"M Y" }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-sm text-slate-500">Contact Email</p>
+                                    <p class="font-medium">{{ bid.contractor.email }}</p>
+                                </div>
+                                {% if bid.contractor.profile.phone %}
+                                <div>
+                                    <p class="text-sm text-slate-500">Phone</p>
+                                    <p class="font-medium">{{ bid.contractor.profile.phone }}</p>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <p class="text-sm text-slate-500">Experience</p>
+                                    <p class="font-medium">{{ bid.contractor.profile.experience_years }}+ years</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-slate-500">Business License</p>
+                                <p class="font-medium">{{ bid.contractor.profile.license_number|default:"Not provided" }}</p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-slate-500">Address</p>
+                                <p class="font-medium">{{ bid.contractor.profile.address|default:"Not provided"|linebreaks }}</p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-slate-500">Previous Bids</p>
+                                <div class="flex items-center gap-4">
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold text-dark-green">{{ contractor_stats.total_bids }}</p>
+                                        <p class="text-xs text-slate-500">Total</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold text-emerald-600">{{ contractor_stats.accepted_bids }}</p>
+                                        <p class="text-xs text-slate-500">Accepted</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold text-amber-600">{{ contractor_stats.pending_bids }}</p>
+                                        <p class="text-xs text-slate-500">Pending</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bid Proposal -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-dark-green"></i>
+                        Bid Proposal
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Bid Summary -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
+                                <p class="text-sm text-slate-600 mb-2">Bid Amount</p>
+                                <p class="text-3xl font-bold text-dark-green">${{ bid.bid_amount }}</p>
+                                {% if bid.package.estimated_cost %}
+                                    <p class="text-xs text-slate-500 mt-2">
+                                        {% if bid.bid_amount < bid.package.estimated_cost %}
+                                            <span class="text-emerald-600">▼ {{ bid.percentage_below_estimate|floatformat:1 }}% below estimate</span>
+                                        {% elif bid.bid_amount > bid.package.estimated_cost %}
+                                            <span class="text-amber-600">▲ {{ bid.percentage_above_estimate|floatformat:1 }}% above estimate</span>
+                                        {% else %}
+                                            <span class="text-slate-500">Matches estimate</span>
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                                <p class="text-sm text-slate-600 mb-2">Estimated Duration</p>
+                                <p class="text-3xl font-bold text-blue-600">{{ bid.duration_days }} days</p>
+                                <p class="text-xs text-slate-500 mt-2">{{ bid.duration_weeks }} weeks</p>
+                            </div>
+                            
+                            <div class="bg-amber-50 p-6 rounded-xl border border-amber-100">
+                                <p class="text-sm text-slate-600 mb-2">Bid Status</p>
+                                <p class="text-2xl font-bold text-amber-600">{{ bid.get_status_display }}</p>
+                                <p class="text-xs text-slate-500 mt-2">
+                                    Submitted {{ bid.submitted_at|date:"M d, Y" }}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Proposal Text -->
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-4">Proposal Details</h3>
+                            <div class="prose max-w-none text-slate-700 bg-slate-50 p-6 rounded-xl">
+                                {{ bid.proposal_text|linebreaks }}
+                            </div>
+                        </div>
+                        
+                        <!-- Attached Document -->
+                        {% if bid.proposal_document %}
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-4">Supporting Document</h3>
+                            <a href="{{ bid.proposal_document.url }}" target="_blank" 
+                               class="inline-flex items-center gap-3 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl transition">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                                <div>
+                                    <p class="font-medium">{{ bid.proposal_document.name|cut:"proposals/" }}</p>
+                                    <p class="text-sm text-slate-500">Click to view/download</p>
+                                </div>
+                                <i data-lucide="external-link" class="w-4 h-4 ml-auto"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Review Form -->
+                {% if bid.status in 'submitted,under_review' %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5 text-dark-green"></i>
+                        Evaluation & Decision
+                    </h2>
+                    
+                    <form method="POST" action="{% url 'bid_review_detail' bid.id %}" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label for="review_notes" class="block text-sm font-medium text-slate-700 mb-2">
+                                Evaluation Notes
+                            </label>
+                            <textarea id="review_notes" name="review_notes" rows="6"
+                                      class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition"
+                                      placeholder="Enter your evaluation notes, feedback, concerns, or questions for the contractor...">{{ bid.review_notes|default:'' }}</textarea>
+                            <p class="mt-2 text-sm text-slate-500">These notes will be visible to the contractor if you choose to share feedback.</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="status" class="block text-sm font-medium text-slate-700 mb-2">
+                                    Update Status
+                                </label>
+                                <select id="status" name="status" 
+                                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                                    <option value="pending" {% if bid.status == 'pending' %}selected{% endif %}>Pending Review</option>
+                                    <option value="under_review" {% if bid.status == 'under_review' %}selected{% endif %}>Under Review</option>
+                                    <option value="accepted" {% if bid.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                                    <option value="rejected" {% if bid.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="rating" class="block text-sm font-medium text-slate-700 mb-2">
+                                    Bid Rating (Optional)
+                                </label>
+                                <div class="flex items-center gap-1">
+                                    {% for i in "12345" %}
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="rating" value="{{ i }}" 
+                                               {% if bid.rating == i|add:0 %}checked{% endif %}
+                                               class="sr-only peer">
+                                        <i data-lucide="star" 
+                                           class="w-6 h-6 peer-checked:text-amber-500 text-slate-300 hover:text-amber-400 transition"></i>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100">
+                            <button type="submit" name="action" value="save" 
+                                    class="bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green flex items-center gap-2 justify-center">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                Save Evaluation
+                            </button>
+                            
+                            <button type="submit" name="action" value="accept" 
+                                    class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-emerald-700 flex items-center gap-2 justify-center">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                Accept Bid & Award Package
+                            </button>
+                            
+                            <button type="submit" name="action" value="reject" 
+                                    class="bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 flex items-center gap-2 justify-center">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                                Reject Bid
+                            </button>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 mt-0.5"></i>
+                                <div class="text-sm text-amber-800">
+                                    <p class="font-medium mb-1">Important Note</p>
+                                    <p>Accepting a bid will award the package to this contractor and automatically form a team. Rejecting a bid cannot be undone.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Right Column - Sidebar -->
+            <div class="space-y-6">
+                <!-- Package Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="package" class="w-4 h-4"></i>
+                        Package Details
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-dark-green mb-1">{{ bid.package.title }}</h4>
+                            <p class="text-sm text-slate-600">{{ bid.package.description|truncatechars:100 }}</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Package Type</span>
+                                <span class="font-medium">{{ bid.package.get_package_type_display }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Status</span>
+                                <span class="font-medium">{{ bid.package.get_status_display }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Deadline</span>
+                                <span class="font-medium">{{ bid.package.deadline|date:"M d, Y" }}</span>
+                            </div>
+                            {% if bid.package.estimated_cost %}
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Estimated Cost</span>
+                                <span class="font-bold text-dark-green">${{ bid.package.estimated_cost }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{% url 'package_detail' bid.package.id %}" 
+                           class="inline-block w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition">
+                            View Package Details
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Other Bids Comparison -->
+                {% if other_bids.exists %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        Comparison with Other Bids
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="text-center">
+                            <p class="text-sm text-slate-600">Total Bids for this Package</p>
+                            <p class="text-2xl font-bold text-dark-green">{{ other_bids.count|add:1 }}</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Lowest Bid</span>
+                                <span class="font-bold text-emerald-600">${{ lowest_bid }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Average Bid</span>
+                                <span class="font-bold text-blue-600">${{ average_bid }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Highest Bid</span>
+                                <span class="font-bold text-amber-600">${{ highest_bid }}</span>
+                            </div>
+                        </div>
+                        
+                        {% if bid.bid_amount == lowest_bid %}
+                            <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                <p class="text-sm text-emerald-800 font-medium text-center">✅ This is the lowest bid</p>
+                            </div>
+                        {% elif bid.bid_amount < average_bid %}
+                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                <p class="text-sm text-blue-800 font-medium text-center">📊 Bid is below average</p>
+                            </div>
+                        {% else %}
+                            <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                <p class="text-sm text-amber-800 font-medium text-center">⚠️ Bid is above average</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Review History -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                        Review History
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Submitted</p>
+                                <p class="text-sm text-slate-500">{{ bid.submitted_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                            <div class="bg-slate-100 px-2 py-1 rounded text-xs">Initial</div>
+                        </div>
+                        
+                        {% if bid.reviewed_at %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Last Reviewed</p>
+                                <p class="text-sm text-slate-500">{{ bid.reviewed_at|date:"M d, Y g:i A" }}</p>
+                                {% if bid.reviewed_by %}
+                                    <p class="text-xs text-slate-500">by {{ bid.reviewed_by.username }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Reviewed</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if bid.status == 'accepted' %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Accepted</p>
+                                <p class="text-sm text-slate-500">{{ bid.reviewed_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                            <div class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs">Awarded</div>
+                        </div>
+                        {% elif bid.status == 'rejected' %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Rejected</p>
+                                <p class="text-sm text-slate-500">{{ bid.reviewed_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                            <div class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Rejected</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                    <h3 class="font-bold text-dark-green mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        {% if bid.status in 'submitted,under_review' %}
+                            <button type="button" 
+                               class="block w-full bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 text-center"
+                               onclick="openConfirmModal('accept', 'Accept this bid and award the package to this contractor? This action cannot be undone.')">
+                                Accept & Award Package
+                            </button>
+                            <button type="button" 
+                               class="block w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 text-center"
+                               onclick="openConfirmModal('reject', 'Reject this bid? This action cannot be undone.')">
+                                Reject Bid
+                            </button>
+                        {% endif %}
+                        
+                        {% if bid.contractor.email %}
+                            <a href="mailto:{{ bid.contractor.email }}?subject=Regarding your bid for {{ bid.package.title }}" 
+                               class="block w-full bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 text-center">
+                                Email Contractor
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'bid_review_list' %}" 
+                           class="block w-full bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 text-center">
+                            Back to All Bids
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 animate-in">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="flex-shrink-0">
+                <i data-lucide="alert-circle" class="w-6 h-6 text-amber-600"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Confirm Action</h3>
+        </div>
+        
+        <p id="modalMessage" class="text-slate-600 mb-8"></p>
+        
+        <div class="flex gap-3 justify-end">
+            <button type="button" onclick="closeConfirmModal()" 
+                    class="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition">
+                Cancel
+            </button>
+            <button type="button" id="confirmButton" onclick="confirmAction()" 
+                    class="px-6 py-2.5 bg-dark-green text-white rounded-lg font-medium hover:bg-green-700 transition">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pendingAction = null;
+    
+    function openConfirmModal(action, message) {
+        pendingAction = action;
+        document.getElementById('modalMessage').textContent = message;
+        document.getElementById('confirmModal').classList.remove('hidden');
+        
+        // Update button color based on action
+        const confirmBtn = document.getElementById('confirmButton');
+        if (action === 'accept') {
+            confirmBtn.className = 'px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition';
+        } else if (action === 'reject') {
+            confirmBtn.className = 'px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition';
+        }
+    }
+    
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.add('hidden');
+        pendingAction = null;
+    }
+    
+    function confirmAction() {
+        if (pendingAction === 'accept') {
+            window.location.href = '{% url "bid_accept" bid.id %}';
+        } else if (pendingAction === 'reject') {
+            window.location.href = '{% url "bid_reject" bid.id %}';
+        }
+        closeConfirmModal();
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeConfirmModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeConfirmModal();
+        }
+    });
+    
+    // Star rating interaction
+    document.addEventListener('DOMContentLoaded', function() {
+        const stars = document.querySelectorAll('input[name="rating"]');
+        const starIcons = document.querySelectorAll('input[name="rating"] + i');
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('change', function() {
+                // Update star colors
+                starIcons.forEach((icon, i) => {
+                    if (i <= index) {
+                        icon.classList.remove('text-slate-300');
+                        icon.classList.add('text-amber-500');
+                    } else {
+                        icon.classList.remove('text-amber-500');
+                        icon.classList.add('text-slate-300');
+                    }
+                });
+            });
+            
+            // Initialize based on current rating
+            if (star.checked) {
+                starIcons.forEach((icon, i) => {
+                    if (i <= index) {
+                        icon.classList.remove('text-slate-300');
+                        icon.classList.add('text-amber-500');
+                    }
+                });
+            }
+        });
+        
+        // Form submission confirmation
+        const acceptButton = document.querySelector('button[value="accept"]');
+        const rejectButton = document.querySelector('button[value="reject"]');
+        
+        if (acceptButton) {
+            acceptButton.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to accept this bid and award the package? This action cannot be undone.')) {
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        if (rejectButton) {
+            rejectButton.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to reject this bid? This action cannot be undone.')) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

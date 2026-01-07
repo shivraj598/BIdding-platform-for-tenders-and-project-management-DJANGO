@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit Package{% else %}Add New Package{% endif %} | Leeds Supply Chain{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1">
+        <div class="py-8">
+            <div class="max-w-4xl mx-auto px-4">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="{% url 'project_detail' project.id %}" class="inline-flex items-center gap-2 text-slate-600 hover:text-dark-green transition font-medium">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Project
+            </a>
+        </div>
+        
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
+            <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'project_list' %}" class="hover:text-dark-green">Projects</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'project_detail' project.id %}" class="hover:text-dark-green">{{ project.title|truncatechars:30 }}</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span class="text-dark-green font-medium">
+                {% if form.instance.pk %}Edit Package{% else %}Add New Package{% endif %}
+            </span>
+        </nav>
+        
+        <!-- Form Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+            <div class="bg-dark-green text-white p-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-white/20 p-3 rounded-xl">
+                        {% if form.instance.pk %}
+                            <i data-lucide="edit" class="w-8 h-8"></i>
+                        {% else %}
+                            <i data-lucide="package" class="w-8 h-8"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">
+                            {% if form.instance.pk %}
+                                Edit Package: {{ form.instance.title }}
+                            {% else %}
+                                Add New Package
+                            {% endif %}
+                        </h1>
+                        <p class="text-emerald-200 mt-1">
+                            {% if form.instance.pk %}
+                                Update package details for "{{ project.title }}"
+                            {% else %}
+                                Create a new work package for "{{ project.title }}"
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project Info Card -->
+            <div class="p-6 border-b border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800">{{ project.title }}</h3>
+                        <div class="flex items-center gap-4 text-sm text-slate-600 mt-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                {{ project.location }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                {{ project.start_date|date:"M d, Y" }} - {{ project.end_date|date:"M d, Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{% url 'project_detail' project.id %}" 
+                       class="text-dark-green hover:underline font-medium flex items-center gap-1">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Back to Project
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Package Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <form method="POST" class="space-y-8">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                            <span class="font-medium">Please correct the errors below:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Package Details -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="package" class="w-5 h-5 text-dark-green"></i>
+                        Package Details
+                    </h2>
+                    
+                    <!-- Title -->
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Package Title *
+                        </label>
+                        <input type="text" id="{{ form.title.id_for_label }}" name="title" 
+                               value="{{ form.title.value|default:'' }}" required
+                               class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                               placeholder="e.g., Electrical Wiring for Main Building">
+                        {% if form.title.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.title.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Package Type -->
+                    <div>
+                        <label for="{{ form.package_type.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Work Type *
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {% for value, label in form.fields.package_type.choices %}
+                            <label class="relative">
+                                <input type="radio" name="package_type" value="{{ value }}" 
+                                       {% if form.package_type.value == value %}checked{% endif %} 
+                                       required class="sr-only peer">
+                                <div class="p-4 border border-slate-200 rounded-xl text-center cursor-pointer peer-checked:border-dark-green peer-checked:bg-emerald-50 hover:bg-slate-50 transition">
+                                    {% if value == 'wiring' %}
+                                        <i data-lucide="zap" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'plumbing' %}
+                                        <i data-lucide="droplets" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'traffic' %}
+                                        <i data-lucide="car" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'water' %}
+                                        <i data-lucide="water" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'road' %}
+                                        <i data-lucide="road" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'sanitation' %}
+                                        <i data-lucide="trash-2" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'landscaping' %}
+                                        <i data-lucide="trees" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'structural' %}
+                                        <i data-lucide="building" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% else %}
+                                        <i data-lucide="package" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% endif %}
+                                    <span class="text-sm font-medium">{{ label }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.package_type.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.package_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Package Description *
+                        </label>
+                        <textarea id="{{ form.description.id_for_label }}" name="description" rows="6" required
+                                  class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                  placeholder="Detailed description of work scope, specifications, requirements...">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">Include technical specifications, materials required, and any special requirements.</p>
+                    </div>
+                </div>
+                
+                <!-- Financial & Timeline -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-dark-green"></i>
+                        Financial & Timeline
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Estimated Cost -->
+                        <div>
+                            <label for="{{ form.estimated_cost.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Estimated Cost (Optional)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-slate-500">$</span>
+                                <input type="number" id="{{ form.estimated_cost.id_for_label }}" name="estimated_cost" 
+                                       value="{{ form.estimated_cost.value|default:'' }}" min="0" step="0.01"
+                                       class="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                       placeholder="0.00">
+                            </div>
+                            {% if form.estimated_cost.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.estimated_cost.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Deadline -->
+                        <div>
+                            <label for="{{ form.deadline.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                Bidding Deadline *
+                            </label>
+                            <div class="relative">
+                                <input type="date" id="{{ form.deadline.id_for_label }}" name="deadline" 
+                                       value="{{ form.deadline.value|date:'Y-m-d'|default:'' }}" required
+                                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                       min="{{ project.start_date|date:'Y-m-d' }}"
+                                       max="{{ project.end_date|date:'Y-m-d' }}">
+                                <i data-lucide="calendar" class="absolute right-3 top-3 w-5 h-5 text-slate-400"></i>
+                            </div>
+                            {% if form.deadline.errors %}
+                                <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                    {{ form.deadline.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <p class="mt-2 text-sm text-slate-500">Must be between project start and end dates.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-5 h-5 text-dark-green"></i>
+                        Package Status
+                    </h2>
+                    
+                    <div class="w-full md:w-1/2">
+                        <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Status *
+                        </label>
+                        <select id="{{ form.status.id_for_label }}" name="status" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white">
+                            {% for value, label in form.fields.status.choices %}
+                                <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.status.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.status.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-medium mb-1">Status Guidance</p>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><strong>Open for Bids:</strong> Contractors can submit proposals</li>
+                                    <li><strong>In Progress:</strong> Package is currently being executed</li>
+                                    <li><strong>Awarded:</strong> Contract has been assigned to a contractor</li>
+                                    <li><strong>Completed:</strong> Work has been finished</li>
+                                    <li><strong>Cancelled:</strong> Package has been cancelled</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end">
+                    <a href="{% url 'project_detail' project.id %}" 
+                       class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-dark-green text-white px-8 py-3 rounded-xl font-bold hover-bg-green shadow-lg transition-all flex items-center gap-2 justify-center">
+                        {% if form.instance.pk %}
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            Update Package
+                        {% else %}
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            Create Package
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tips for Creating Good Packages -->
+        <div class="mt-8 bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+            <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                Tips for Creating Effective Packages
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-slate-800 mb-2">Clear Scope Definition</h4>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                        <li>Define exact work boundaries</li>
+                        <li>List all deliverables</li>
+                        <li>Specify quality standards</li>
+                        <li>Include acceptance criteria</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-slate-800 mb-2">Realistic Requirements</h4>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                        <li>Set achievable timelines</li>
+                        <li>Provide budget guidance</li>
+                        <li>List required certifications</li>
+                        <li>Specify safety requirements</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set min and max dates for deadline
+    document.addEventListener('DOMContentLoaded', function() {
+        const deadlineInput = document.getElementById('{{ form.deadline.id_for_label }}');
+        const projectStart = '{{ project.start_date|date:"Y-m-d" }}';
+        const projectEnd = '{{ project.end_date|date:"Y-m-d" }}';
+        
+        if (deadlineInput) {
+            deadlineInput.min = projectStart;
+            deadlineInput.max = projectEnd;
+            
+            // Add date validation message
+            deadlineInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const startDate = new Date(projectStart);
+                const endDate = new Date(projectEnd);
+                
+                if (selectedDate < startDate) {
+                    alert('Deadline cannot be before project start date: ' + projectStart);
+                    this.value = '';
+                } else if (selectedDate > endDate) {
+                    alert('Deadline cannot be after project end date: ' + projectEnd);
+                    this.value = '';
+                }
+            });
+        }
+        
+        // Auto-select package type if editing
+        const packageTypeRadios = document.querySelectorAll('input[name="package_type"]');
+        packageTypeRadios.forEach(radio => {
+            if (radio.checked) {
+                radio.parentElement.classList.add('peer-checked:border-dark-green', 'peer-checked:bg-emerald-50');
+            }
+        });
+        
+        // Auto-focus title field
+        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        if (titleInput) {
+            titleInput.focus();
+        }
+    });
+</script>
+
+<style>
+    /* Custom radio button styling */
+    input[type="radio"]:checked + div i {
+        color: #064E3B !important;
+    }
+    
+    input[type="radio"]:checked + div span {
+        color: #064E3B;
+        font-weight: 600;
+    }
+</style>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

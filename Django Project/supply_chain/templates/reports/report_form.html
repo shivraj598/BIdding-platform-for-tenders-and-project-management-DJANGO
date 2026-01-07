@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit Report{% else %}Create Report{% endif %} | Leeds Supply Chain {% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
+            <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'report_list' %}" class="hover:text-dark-green">Reports</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span class="text-dark-green font-medium">
+                {% if form.instance.pk %}Edit Report{% else %}Create Report{% endif %}
+            </span>
+        </nav>
+        
+        <!-- Form Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+            <div class="bg-dark-green text-white p-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-white/20 p-3 rounded-xl">
+                        {% if form.instance.pk %}
+                            <i data-lucide="edit" class="w-8 h-8"></i>
+                        {% else %}
+                            <i data-lucide="clipboard-plus" class="w-8 h-8"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">
+                            {% if form.instance.pk %}
+                                Edit Report
+                            {% else %}
+                                Create New Report
+                            {% endif %}
+                        </h1>
+                        <p class="text-emerald-200 mt-1">
+                            {% if form.instance.pk %}
+                                Update report details and content
+                            {% else %}
+                                Document project progress, issues, or findings
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                            <span class="font-medium">Please correct the errors below:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Report Information -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="info" class="w-5 h-5 text-dark-green"></i>
+                        Report Information
+                    </h2>
+                    
+                    <!-- Project Selection -->
+                    <div>
+                        <label for="{{ form.project.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Project *
+                        </label>
+                        <select id="{{ form.project.id_for_label }}" name="project" required
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white">
+                            <option value="">Select a project</option>
+                            {% for project in user.projects.all %}
+                                <option value="{{ project.id }}" 
+                                        {% if form.project.value == project.id or form.instance.project.id == project.id %}selected{% endif %}>
+                                    {{ project.title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.project.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.project.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Report Type -->
+                    <div>
+                        <label for="{{ form.report_type.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Report Type *
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {% for value, label in form.fields.report_type.choices %}
+                            <label class="relative">
+                                <input type="radio" name="report_type" value="{{ value }}" 
+                                       {% if form.report_type.value == value or form.instance.report_type == value %}checked{% endif %} 
+                                       required class="sr-only peer">
+                                <div class="p-4 border border-slate-200 rounded-xl text-center cursor-pointer peer-checked:border-dark-green peer-checked:bg-emerald-50 hover:bg-slate-50 transition">
+                                    {% if value == 'progress' %}
+                                        <i data-lucide="trending-up" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'financial' %}
+                                        <i data-lucide="dollar-sign" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'quality' %}
+                                        <i data-lucide="check-circle" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'safety' %}
+                                        <i data-lucide="shield" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% elif value == 'completion' %}
+                                        <i data-lucide="flag" class="w-5 h-5 mx-auto mb-2 text-slate-600"></i>
+                                    {% endif %}
+                                    <span class="text-sm font-medium">{{ label }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.report_type.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.report_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Report Title -->
+                    <div>
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Report Title *
+                        </label>
+                        <input type="text" id="{{ form.title.id_for_label }}" name="title" 
+                               value="{{ form.title.value|default:form.instance.title|default:'' }}" required
+                               class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                               placeholder="e.g., Monthly Progress Report - Bridge Construction">
+                        {% if form.title.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.title.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Report Content -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-dark-green"></i>
+                        Report Content
+                    </h2>
+                    
+                    <div>
+                        <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Report Details *
+                        </label>
+                        <textarea id="{{ form.content.id_for_label }}" name="content" rows="12" required
+                                  class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                                  placeholder="Enter detailed report content...">{{ form.content.value|default:form.instance.content|default:'' }}</textarea>
+                        {% if form.content.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.content.errors.0 }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Report Templates -->
+                        <div class="mt-4">
+                            <p class="text-sm font-medium text-slate-700 mb-2">Quick Templates:</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="applyTemplate('progress')" 
+                                        class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg hover:bg-emerald-200">
+                                    Progress Report
+                                </button>
+                                <button type="button" onclick="applyTemplate('financial')" 
+                                        class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-200">
+                                    Financial Summary
+                                </button>
+                                <button type="button" onclick="applyTemplate('issues')" 
+                                        class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-lg hover:bg-amber-200">
+                                    Issues Report
+                                </button>
+                                <button type="button" onclick="applyTemplate('safety')" 
+                                        class="text-xs bg-red-100 text-red-800 px-3 py-1 rounded-lg hover:bg-red-200">
+                                    Safety Audit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Document Attachment -->
+                <div class="space-y-6 pt-8 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="paperclip" class="w-5 h-5 text-dark-green"></i>
+                        Document Attachment
+                    </h2>
+                    
+                    <div>
+                        <label for="{{ form.document.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Supporting Document (Optional)
+                        </label>
+                        <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 transition"
+                             onclick="document.getElementById('document').click()">
+                            <i data-lucide="upload-cloud" class="w-10 h-10 mx-auto text-slate-400 mb-3"></i>
+                            <p class="text-slate-600 mb-1">
+                                {% if form.instance.document %}
+                                    Current file: {{ form.instance.document.name|cut:"reports/" }}
+                                {% else %}
+                                    Click to upload supporting document
+                                {% endif %}
+                            </p>
+                            <p class="text-sm text-slate-500">PDF, DOC, DOCX, XLSX files up to 10MB</p>
+                        </div>
+                        <input type="file" id="document" name="document" 
+                               accept=".pdf,.doc,.docx,.xlsx,.xls"
+                               class="hidden" onchange="updateFileName('document', 'document-file-name')">
+                        <p id="document-file-name" class="text-sm text-slate-500 mt-2"></p>
+                        {% if form.document.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.document.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end">
+                    <a href="{% url 'council_dashboard' %}" 
+                       class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-dark-green text-white px-8 py-3 rounded-xl font-bold hover-bg-green shadow-lg transition-all flex items-center gap-2 justify-center">
+                        {% if form.instance.pk %}
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            Update Report
+                        {% else %}
+                            <i data-lucide="clipboard-plus" class="w-5 h-5"></i>
+                            Create Report
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Report Guidelines -->
+        <div class="mt-8 bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+            <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                Report Writing Guidelines
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-slate-800 mb-2">Structure</h4>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                        <li>Executive Summary (brief overview)</li>
+                        <li>Introduction and background</li>
+                        <li>Findings/Analysis</li>
+                        <li>Recommendations</li>
+                        <li>Conclusion and next steps</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-slate-800 mb-2">Best Practices</h4>
+                    <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                        <li>Use clear, concise language</li>
+                        <li>Include data and evidence</li>
+                        <li>Provide actionable recommendations</li>
+                        <li>Attach supporting documents</li>
+                        <li>Update regularly for ongoing projects</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Report templates
+    const templates = {
+        progress: `MONTHLY PROGRESS REPORT
+
+Executive Summary:
+Project is currently [percentage]% complete, [ahead/behind] schedule by [days]. Key milestones achieved: [list].
+
+Progress This Month:
+1. Completed work: [details]
+2. Work in progress: [details]
+3. Upcoming work: [details]
+
+Challenges & Issues:
+- [List any challenges]
+- [Proposed solutions]
+
+Next Month Plan:
+- [Planned activities]
+- [Resource requirements]
+- [Risk mitigation]`,
+
+        financial: `FINANCIAL REPORT
+
+Budget Overview:
+- Total budget: $[amount]
+- Spent to date: $[amount] ([percentage]%)
+- Remaining budget: $[amount]
+
+Cost Breakdown:
+1. Labor: $[amount]
+2. Materials: $[amount]
+3. Equipment: $[amount]
+4. Other: $[amount]
+
+Variance Analysis:
+- Areas under budget: [details]
+- Areas over budget: [details with reasons]
+
+Financial Recommendations:
+- [Specific recommendations]`,
+
+        issues: `ISSUES REPORT
+
+Issues Identified:
+1. [Issue description]
+   - Impact: [High/Medium/Low]
+   - Status: [Open/In Progress/Resolved]
+   - Responsible: [Person/Team]
+
+2. [Issue description]
+   - Impact: [High/Medium/Low]
+   - Status: [Open/In Progress/Resolved]
+   - Responsible: [Person/Team]
+
+Root Cause Analysis:
+- [Analysis of underlying causes]
+
+Action Plan:
+- [Specific actions with deadlines]
+- [Responsible parties]`,
+
+        safety: `SAFETY AUDIT REPORT
+
+Audit Details:
+- Date: [date]
+- Location: [site location]
+- Auditor: [name]
+- Areas inspected: [list]
+
+Findings:
+1. [Safety issue identified]
+   - Risk level: [High/Medium/Low]
+   - Immediate action required: [Yes/No]
+
+2. [Safety issue identified]
+   - Risk level: [High/Medium/Low]
+   - Immediate action required: [Yes/No]
+
+Compliance Status:
+- [Compliance percentage]% compliant
+- [Number] non-compliances found
+
+Recommendations:
+- [Specific safety improvements]
+- [Training requirements]
+- [Equipment upgrades]`
+    };
+
+    function applyTemplate(templateName) {
+        const textarea = document.getElementById('{{ form.content.id_for_label }}');
+        if (textarea && templates[templateName]) {
+            textarea.value = templates[templateName];
+            // Trigger input event for any validation
+            textarea.dispatchEvent(new Event('input'));
+        }
+    }
+
+    // File upload handling
+    function updateFileName(inputId, displayId) {
+        const input = document.getElementById(inputId);
+        const display = document.getElementById(displayId);
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+            
+            if (fileSize > 10) {
+                alert('File size exceeds 10MB limit. Please choose a smaller file.');
+                input.value = '';
+                display.textContent = '';
+                display.className = 'text-sm text-red-500 mt-2';
+                display.textContent = 'File too large (max 10MB)';
+            } else {
+                display.textContent = 'Selected file: ' + file.name + ' (' + fileSize + ' MB)';
+                display.className = 'text-sm text-dark-green font-medium mt-2';
+            }
+        }
+    }
+
+    // Auto-focus title field
+    document.addEventListener('DOMContentLoaded', function() {
+        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        if (titleInput) {
+            titleInput.focus();
+        }
+        
+        // Show current document if exists
+        const currentDoc = '{{ form.instance.document.name|default:"" }}';
+        if (currentDoc) {
+            const display = document.getElementById('document-file-name');
+            if (display) {
+                display.textContent = 'Current file: ' + currentDoc.replace('reports/', '');
+                display.className = 'text-sm text-dark-green font-medium mt-2';
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Custom radio button styling */
+    input[type="radio"]:checked + div i {
+        color: #064E3B !important;
+    }
+    
+    input[type="radio"]:checked + div span {
+        color: #064E3B;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

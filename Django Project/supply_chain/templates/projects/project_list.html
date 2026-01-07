@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Projects{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <a href="{% url 'council_dashboard' %}" class="text-slate-600 hover:text-dark-green transition">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                            </a>
+                            <h1 class="text-3xl font-bold text-slate-800">Projects</h1>
+                        </div>
+                        <p class="text-slate-600 mt-2">Manage and track all infrastructure projects</p>
+                    </div>
+                    {% if user.user_type == 'council' %}
+                    <a href="{% url 'project_create' %}" 
+                       class="bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green flex items-center gap-2">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Create New Project
+                    </a>
+                    {% endif %}
+                </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+                <div class="bg-emerald-50 p-4 rounded-xl">
+                    <p class="text-sm text-slate-600">Total Projects</p>
+                    <h3 class="text-2xl font-bold text-dark-green mt-1">{{ total_projects }}</h3>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl">
+                    <p class="text-sm text-slate-600">Published</p>
+                    <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ published_count }}</h3>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-xl">
+                    <p class="text-sm text-slate-600">In Progress</p>
+                    <h3 class="text-2xl font-bold text-amber-600 mt-1">{{ in_progress_count }}</h3>
+                </div>
+                <div class="bg-green-50 p-4 rounded-xl">
+                    <p class="text-sm text-slate-600">Completed</p>
+                    <h3 class="text-2xl font-bold text-green-600 mt-1">{{ completed_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Search -->
+                <div class="flex-1">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="text" 
+                               placeholder="Search projects by title, location, or description..." 
+                               class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none"
+                               id="search-input">
+                    </div>
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="w-full md:w-auto">
+                    <select class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none appearance-none bg-white"
+                            id="status-filter">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <!-- Sort By -->
+                <div class="w-full md:w-auto">
+                    <select class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none appearance-none bg-white"
+                            id="sort-by">
+                        <option value="-created_at">Newest First</option>
+                        <option value="created_at">Oldest First</option>
+                        <option value="title">Title A-Z</option>
+                        <option value="-title">Title Z-A</option>
+                        <option value="end_date">Deadline Ascending</option>
+                        <option value="-end_date">Deadline Descending</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if projects %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for project in projects %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <!-- Project Header -->
+                    <div class="p-6 border-b border-slate-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ project.title }}</h3>
+                                <div class="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    {{ project.location }}
+                                </div>
+                            </div>
+                            <span class="text-xs font-medium px-3 py-1 rounded-full 
+                                {% if project.status == 'published' %}bg-emerald-100 text-emerald-800
+                                {% elif project.status == 'draft' %}bg-slate-100 text-slate-800
+                                {% elif project.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% elif project.status == 'completed' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <!-- Project Description -->
+                        <p class="text-slate-600 text-sm mb-4 line-clamp-2">{{ project.description|truncatechars:120 }}</p>
+                        
+                        <!-- Packages Badges -->
+                        <div class="flex flex-wrap gap-1 mb-4">
+                            {% for package in project.packages.all|slice:":3" %}
+                                <span class="bg-slate-100 px-2 py-1 rounded text-xs font-medium">{{ package.get_package_type_display }}</span>
+                            {% endfor %}
+                            {% if project.packages.count > 3 %}
+                                <span class="bg-slate-100 px-2 py-1 rounded text-xs font-medium">+{{ project.packages.count|add:"-3" }} more</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Budget and Timeline -->
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-slate-500">Budget Range</p>
+                                <p class="font-medium text-dark-green">
+                                    {% if project.budget_range %}
+                                        {{ project.budget_range }}
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">End Date</p>
+                                <p class="font-medium">{{ project.end_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Project Footer -->
+                    <div class="p-6 bg-slate-50">
+                        <div class="flex justify-between items-center">
+                            <div class="text-sm text-slate-600">
+                                <span class="font-medium">{{ project.packages.count }}</span> packages
+                                {% if user.profile.user_type == 'contractor' %}
+                                    <span class="mx-2">•</span>
+                                    <span class="font-medium">{{ project.packages.open.count }}</span> open for bids
+                                {% endif %}
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{% url 'project_detail' project.id %}" 
+                                   class="text-dark-green hover:underline font-medium text-sm">
+                                    View Details
+                                </a>
+                                {% if user.user_type == 'council' and user == project.council %}
+                                    <a href="{% url 'project_update' project.id %}"
+                                       class="text-slate-600 hover:text-dark-green">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </a>
+                                    <a href="{% url 'project_delete' project.id %}"
+                                       class="text-slate-600 hover:text-red-600">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-4 py-2 bg-dark-green text-white rounded-lg font-medium">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="folder-x" class="w-10 h-10 text-slate-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-2">No Projects Found</h3>
+                <p class="text-slate-600 mb-6 max-w-md mx-auto">
+                    {% if user.profile.user_type == 'council' %}
+                        You haven't created any projects yet. Get started by creating your first infrastructure project.
+                    {% else %}
+                        There are no projects available for bidding at the moment. Check back later for new opportunities.
+                    {% endif %}
+                </p>
+                {% if user.profile.user_type == 'council' %}
+                    <a href="{% url 'project_create' %}" 
+                       class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                        Create Your First Project
+                    </a>
+                {% else %}
+                    <a href="{% url 'contractor_dashboard' %}" 
+                       class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                        Return to Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
+        const sortBy = document.getElementById('sort-by');
+        
+        function updateURL() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (searchInput.value) {
+                params.set('search', searchInput.value);
+            } else {
+                params.delete('search');
+            }
+            
+            if (statusFilter.value) {
+                params.set('status', statusFilter.value);
+            } else {
+                params.delete('status');
+            }
+            
+            if (sortBy.value) {
+                params.set('sort', sortBy.value);
+            }
+            
+            // Update URL without reloading page (for demonstration)
+            // In actual implementation, you would submit a form or use AJAX
+            const newUrl = window.location.pathname + '?' + params.toString();
+            window.history.replaceState({}, '', newUrl);
+            
+            // For demo purposes, we'll just log the action
+            console.log('Filters updated:', {
+                search: searchInput.value,
+                status: statusFilter.value,
+                sort: sortBy.value
+            });
+        }
+        
+        // Debounce search input
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateURL, 500);
+        });
+        
+        statusFilter.addEventListener('change', updateURL);
+        sortBy.addEventListener('change', updateURL);
+        
+        // Set current filter values from URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('search')) {
+            searchInput.value = params.get('search');
+        }
+        if (params.get('status')) {
+            statusFilter.value = params.get('status');
+        }
+        if (params.get('sort')) {
+            sortBy.value = params.get('sort');
+        }
+    });
+</script>
+
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+    </div>
+</div>
+{% endblock %}

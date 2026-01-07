@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Intelligent Bid Suggestions{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-dark-green to-emerald-700 text-white">
+        <div class="max-w-7xl mx-auto px-4 py-12">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-white/20 p-3 rounded-xl">
+                            <i data-lucide="brain" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold">Intelligent Bid Suggestions</h1>
+                            <p class="text-emerald-200 mt-2">AI-powered recommendations for optimal bid selection</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                            <p class="text-emerald-200 text-sm">Packages Analyzed</p>
+                            <p class="text-2xl font-bold">{{ summary.total_packages }}</p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                            <p class="text-emerald-200 text-sm">Potential Savings</p>
+                            <p class="text-2xl font-bold">${{ summary.potential_savings|floatformat:0 }}</p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                            <p class="text-emerald-200 text-sm">Success Probability</p>
+                            <p class="text-2xl font-bold">{{ summary.success_probability }}%</p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                            <p class="text-emerald-200 text-sm">AI Confidence</p>
+                            <p class="text-2xl font-bold">{{ summary.ai_confidence }}%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Badge -->
+                <div class="text-center">
+                    <div class="bg-white/20 p-6 rounded-2xl backdrop-blur-sm">
+                        <i data-lucide="cpu" class="w-12 h-12 mx-auto mb-3"></i>
+                        <p class="font-bold">AI Model v2.1</p>
+                        <p class="text-sm text-emerald-200">Updated {{ last_updated|date:"M d" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Priority Recommendations -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600"></i>
+                Priority Recommendations
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for suggestion in priority_suggestions %}
+                <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-amber-50 to-amber-100 p-6 border-b border-amber-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-amber-600 text-white p-2 rounded-lg">
+                                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">{{ suggestion.package.title }}</h3>
+                                    <p class="text-sm text-amber-800">{{ suggestion.package.project.title }}</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold px-3 py-1 rounded-full bg-amber-600 text-white">
+                                HIGH PRIORITY
+                            </span>
+                        </div>
+                        <p class="text-sm text-amber-900">{{ suggestion.reason }}</p>
+                    </div>
+                    
+                    <!-- Details -->
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <p class="text-sm text-slate-500">Recommended Bid</p>
+                                <p class="text-2xl font-bold text-dark-green">${{ suggestion.recommended_bid.bid_amount }}</p>
+                                <p class="text-xs text-slate-500">{{ suggestion.recommended_bid.contractor.username }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Potential Savings</p>
+                                <p class="text-2xl font-bold text-emerald-600">${{ suggestion.potential_savings|floatformat:0 }}</p>
+                                <p class="text-xs text-slate-500">vs. highest bid</p>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Analysis -->
+                        <div class="mb-6">
+                            <h4 class="font-medium text-slate-700 mb-2">AI Analysis:</h4>
+                            <p class="text-sm text-slate-600">{{ suggestion.ai_analysis }}</p>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a href="{% url 'bid_review' suggestion.recommended_bid.id %}" 
+                               class="flex-1 bg-dark-green text-white px-4 py-3 rounded-lg font-bold hover-bg-green text-center">
+                                <i data-lucide="eye" class="w-4 h-4 inline-block mr-2"></i>
+                                Review Bid Details
+                            </a>
+                            <a href="{% url 'bid_accept' suggestion.recommended_bid.id %}" 
+                               class="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-emerald-700 text-center"
+                               onclick="return confirm('Accept AI recommendation for this bid?')">
+                                <i data-lucide="check" class="w-4 h-4 inline-block mr-2"></i>
+                                Accept Recommendation
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Confidence Meter -->
+                    <div class="px-6 pb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-700">AI Confidence Level</span>
+                            <span class="text-sm font-bold text-emerald-600">{{ suggestion.confidence }}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full" 
+                                 style="width: {{ suggestion.confidence }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                    <i data-lucide="check-circle" class="w-16 h-16 text-emerald-300 mx-auto mb-4"></i>
+                    <h3 class="text-xl font-bold text-slate-700 mb-2">No Priority Recommendations</h3>
+                    <p class="text-slate-600 mb-6">All pending bids are within expected parameters. No urgent action required.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Standard Recommendations -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i data-lucide="thumbs-up" class="w-6 h-6 text-emerald-600"></i>
+                Standard Recommendations
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for suggestion in standard_suggestions %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800">{{ suggestion.package.title|truncatechars:30 }}</h3>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                                AI RECOMMENDED
+                            </span>
+                        </div>
+                        
+                        <!-- Project Info -->
+                        <p class="text-sm text-slate-600 mb-4">{{ suggestion.package.project.title|truncatechars:30 }}</p>
+                        
+                        <!-- Bid Comparison -->
+                        <div class="space-y-3 mb-6">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-500">Lowest Bid</span>
+                                <span class="font-medium text-emerald-600">${{ suggestion.lowest_bid }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-500">Recommended</span>
+                                <span class="font-bold text-dark-green">${{ suggestion.recommended_bid.bid_amount }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-500">Highest Bid</span>
+                                <span class="font-medium text-amber-600">${{ suggestion.highest_bid }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Key Factors -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-slate-700 mb-2">Key Factors:</h4>
+                            <div class="flex flex-wrap gap-2">
+                                {% for factor in suggestion.key_factors|slice:":3" %}
+                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    {{ factor }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <a href="{% url 'bid_review' suggestion.recommended_bid.id %}" 
+                               class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium text-sm">
+                                Review
+                            </a>
+                            <a href="{% url 'bid_accept' suggestion.recommended_bid.id %}" 
+                               class="flex-1 text-center bg-dark-green text-white px-3 py-2 rounded-lg font-medium hover-bg-green text-sm">
+                                Accept
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="md:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                    <i data-lucide="package-search" class="w-16 h-16 text-slate-300 mx-auto mb-4"></i>
+                    <h3 class="text-xl font-bold text-slate-700 mb-2">No Standard Recommendations</h3>
+                    <p class="text-slate-600 mb-6">Check back later for more bid suggestions.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- AI Decision Factors -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <i data-lucide="git-merge" class="w-6 h-6 text-purple-600"></i>
+                AI Decision Factors
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center p-6 border border-slate-200 rounded-xl">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="dollar-sign" class="w-6 h-6 text-dark-green"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Cost Efficiency</h4>
+                    <p class="text-sm text-slate-600">Analyzes bid amounts relative to market rates and project estimates</p>
+                    <div class="mt-4 text-xs text-emerald-600 font-medium">
+                        Weight: 35%
+                    </div>
+                </div>
+                
+                <div class="text-center p-6 border border-slate-200 rounded-xl">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="award" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Contractor Performance</h4>
+                    <p class="text-sm text-slate-600">Evaluates past project success rates and client satisfaction</p>
+                    <div class="mt-4 text-xs text-blue-600 font-medium">
+                        Weight: 25%
+                    </div>
+                </div>
+                
+                <div class="text-center p-6 border border-slate-200 rounded-xl">
+                    <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="calendar" class="w-6 h-6 text-amber-600"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Timeline Reliability</h4>
+                    <p class="text-sm text-slate-600">Assesses proposed timelines against historical completion data</p>
+                    <div class="mt-4 text-xs text-amber-600 font-medium">
+                        Weight: 20%
+                    </div>
+                </div>
+                
+                <div class="text-center p-6 border border-slate-200 rounded-xl">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Proposal Quality</h4>
+                    <p class="text-sm text-slate-600">Evaluates proposal completeness, methodology, and risk management</p>
+                    <div class="mt-4 text-xs text-purple-600 font-medium">
+                        Weight: 20%
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Model Info -->
+            <div class="mt-8 pt-8 border-t border-slate-100">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h4 class="font-bold text-slate-800 mb-2">Leeds Supply Chain AI Model v2.1</h4>
+                        <p class="text-sm text-slate-600">
+                            Trained on {{ ai_model.training_data }} historical bids with {{ ai_model.accuracy }}% accuracy rate.
+                            Last updated: {{ ai_model.last_updated|date:"F d, Y" }}
+                        </p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="refreshSuggestions()" 
+                                class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            Refresh Suggestions
+                        </button>
+                        <a href="{% url 'bid_analytics' %}" 
+                           class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 flex items-center gap-2">
+                            <i data-lucide="bar-chart" class="w-4 h-4"></i>
+                            View Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Refresh suggestions
+    function refreshSuggestions() {
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        
+        button.disabled = true;
+        button.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Refreshing...';
+        
+        // Simulate API call
+        setTimeout(() => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            lucide.createIcons();
+            
+            // Show success message
+            showToast('Suggestions refreshed successfully!', 'success');
+        }, 2000);
+    }
+    
+    // Show toast notification
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 ${
+            type === 'success' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'
+        }`;
+        
+        toast.innerHTML = `
+            <i data-lucide="${type === 'success' ? 'check-circle' : 'info'}" class="w-5 h-5"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        lucide.createIcons();
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+    
+    // Accept recommendation confirmation
+    document.addEventListener('DOMContentLoaded', function() {
+        const acceptButtons = document.querySelectorAll('a[href*="bid_accept"]');
+        acceptButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (!this.hasAttribute('onclick')) {
+                    if (!confirm('Accept this AI recommendation?')) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+        
+        // Animate confidence bars on scroll
+        const observerOptions = {
+            threshold: 0.5
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const bar = entry.target.querySelector('.bg-gradient-to-r');
+                    if (bar) {
+                        const width = bar.style.width;
+                        bar.style.width = '0%';
+                        setTimeout(() => {
+                            bar.style.width = width;
+                        }, 300);
+                    }
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.bg-gradient-to-r').forEach(bar => {
+            observer.observe(bar.closest('.px-6'));
+        });
+    });
+</script>
+
+<style>
+    /* Animation for confidence bars */
+    .bg-gradient-to-r {
+        transition: width 1.5s ease-in-out;
+    }
+    
+    /* Card hover effects */
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        transition: transform 0.3s ease;
+    }
+</style>
+{% endblock %}

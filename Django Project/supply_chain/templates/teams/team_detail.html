@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Team: {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+                <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'team_list' %}" class="hover:text-dark-green">Teams</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-dark-green font-medium">{{ team.name }}</span>
+            </nav>
+            
+            <!-- Team Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h1 class="text-3xl font-bold text-slate-800">{{ team.name }}</h1>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full 
+                            {% if team.status == 'forming' %}bg-amber-100 text-amber-800
+                            {% elif team.status == 'active' %}bg-blue-100 text-blue-800
+                            {% elif team.status == 'completed' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ team.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="building-2" class="w-4 h-4"></i>
+                            <span>{{ team.project.title }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span>{{ team.project.location }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Created: {{ team.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            <span>{{ team.members.count }} members</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    {% if user.user_type == 'council' and user == team.project.council %}
+                        <a href="{% url 'team_update' team.id %}" 
+                           class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 flex items-center gap-2">
+                            <i data-lucide="edit" class="w-4 h-4"></i> Edit Team
+                        </a>
+                        <a href="{% url 'team_add_member' team.id %}" 
+                           class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Add Member
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'project_detail' team.project.id %}" 
+                       class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-4 h-4"></i> View Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Team Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Team Members -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-dark-green"></i>
+                            Team Members
+                            <span class="text-sm font-normal text-slate-500">({{ team.members.count }})</span>
+                        </h2>
+                        
+                        {% if user.user_type == 'council' and user == team.project.council %}
+                            <a href="{% url 'team_add_member' team.id %}" 
+                               class="text-dark-green hover:underline font-medium flex items-center gap-1">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i> Add Member
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Lead Contractor -->
+                        <div class="border border-emerald-200 rounded-xl p-6 bg-emerald-50">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                                        <i data-lucide="crown" class="w-6 h-6 text-emerald-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-slate-800">Lead Contractor</h3>
+                                        <p class="text-sm text-slate-600">Primary responsibility for package delivery</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                                    LEAD
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="font-medium text-slate-800 mb-2">{{ team.lead_contractor.profile.company_name|default:team.lead_contractor.username }}</h4>
+                                    <div class="space-y-2 text-sm text-slate-600">
+                                        <p class="flex items-center gap-2">
+                                            <i data-lucide="mail" class="w-4 h-4"></i>
+                                            {{ team.lead_contractor.email }}
+                                        </p>
+                                        {% if team.lead_contractor.profile.phone %}
+                                        <p class="flex items-center gap-2">
+                                            <i data-lucide="phone" class="w-4 h-4"></i>
+                                            {{ team.lead_contractor.profile.phone }}
+                                        </p>
+                                        {% endif %}
+                                        <p class="flex items-center gap-2">
+                                            <i data-lucide="briefcase" class="w-4 h-4"></i>
+                                            {{ team.lead_contractor.profile.experience_years|default:"0" }} years experience
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <p class="text-sm text-slate-500 mb-2">Responsibilities:</p>
+                                    <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                                        <li>Overall project management</li>
+                                        <li>Quality control and assurance</li>
+                                        <li>Primary contact for council</li>
+                                        <li>Team coordination and supervision</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Other Team Members -->
+                        <div>
+                            <h4 class="font-medium text-slate-800 mb-4">Team Members</h4>
+                            <div class="space-y-4">
+                                {% for member in team.members.all %}
+                                    {% if member.contractor != team.lead_contractor %}
+                                    <div class="border border-slate-200 rounded-xl p-6 hover:bg-slate-50 transition">
+                                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="user" class="w-5 h-5 text-slate-600"></i>
+                                                </div>
+                                                <div>
+                                                    <h5 class="font-bold text-slate-800">{{ member.contractor.profile.company_name|default:member.contractor.username }}</h5>
+                                                    <p class="text-sm text-slate-600">{{ member.get_role_display }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-4">
+                                                <span class="text-xs font-medium px-3 py-1 rounded-full 
+                                                    {% if member.role == 'supervisor' %}bg-blue-100 text-blue-800
+                                                    {% elif member.role == 'subcontractor' %}bg-purple-100 text-purple-800
+                                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                    {{ member.get_role_display|upper }}
+                                                </span>
+                                            {% if user.user_type == 'council' and user == team.project.council %}
+                                                <a href="{% url 'team_remove_member' member.id %}" 
+                                                   class="text-red-600 hover:text-red-800"
+                                                   onclick="return confirm('Remove {{ member.contractor.username }} from the team?')">
+                                                    <i data-lucide="user-minus" class="w-4 h-4"></i>
+                                                </a>
+                                            {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div class="text-sm text-slate-600">
+                                                <p class="flex items-center gap-2 mb-1">
+                                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                                    {{ member.contractor.email }}
+                                                </p>
+                                                {% if member.contractor.profile.phone %}
+                                                <p class="flex items-center gap-2">
+                                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                                    {{ member.contractor.profile.phone }}
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            {% if member.notes %}
+                                            <div>
+                                                <p class="text-sm text-slate-500 mb-1">Notes:</p>
+                                                <p class="text-sm text-slate-700">{{ member.notes }}</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% empty %}
+                                    <div class="text-center py-8 border-2 border-dashed border-slate-200 rounded-xl">
+                                        <i data-lucide="users" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
+                                        <p class="text-slate-600">No additional team members yet</p>
+                                        {% if user.user_type == 'council' and user == team.project.council %}
+                                            <a href="{% url 'team_add_member' team.id %}" 
+                                               class="inline-block mt-2 text-dark-green font-medium hover:underline">
+                                                Add your first team member
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project & Packages Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-5 h-5 text-dark-green"></i>
+                        Project Overview
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-2">{{ team.project.title }}</h3>
+                            <p class="text-slate-600 mb-4">{{ team.project.description|truncatechars:200 }}</p>
+                            
+                            <div class="space-y-3 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Location</span>
+                                    <span class="font-medium">{{ team.project.location }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Budget Range</span>
+                                    <span class="font-medium">{{ team.project.budget_range|default:"Not specified" }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Start Date</span>
+                                    <span class="font-medium">{{ team.project.start_date|date:"M d, Y" }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">End Date</span>
+                                    <span class="font-medium">{{ team.project.end_date|date:"M d, Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium text-slate-800 mb-4">Project Council</h4>
+                            <div class="space-y-3 text-sm">
+                                <div>
+                                    <p class="font-medium text-slate-800">{{ team.project.council.get_display_name }}</p>
+                                </div>
+                                {% if team.project.council.email %}
+                                <div class="flex items-center gap-2 text-slate-600">
+                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                    {{ team.project.council.email }}
+                                </div>
+                                {% endif %}
+                                {% if team.project.council.phone %}
+                                <div class="flex items-center gap-2 text-slate-600">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                    {{ team.project.council.phone }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-6">
+                    
+                    <!-- Awarded Packages -->
+                    <h3 class="font-bold text-slate-800 mb-4">Awarded Packages</h3>
+                    <div class="space-y-4">
+                        {% for package in awarded_packages %}
+                        <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-medium text-slate-800">{{ package.title }}</h4>
+                                    <p class="text-sm text-slate-600">{{ package.get_package_type_display }}</p>
+                                </div>
+                                <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                                    Awarded to: {{ package.awarded_bid.contractor.get_display_name }}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p class="text-slate-500">Bid Amount</p>
+                                    <p class="font-bold text-dark-green">${{ package.awarded_bid.bid_amount }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">Duration</p>
+                                    <p class="font-bold">{{ package.awarded_bid.duration_days }} days</p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">Deadline</p>
+                                    <p class="font-bold">{{ package.deadline|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                            <a href="{% url 'package_detail' package.id %}" 
+                               class="inline-block mt-3 text-dark-green hover:underline text-sm font-medium">
+                                View Package Details →
+                            </a>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                            <i data-lucide="package" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                            <p class="text-slate-500">No awarded packages yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Sidebar -->
+            <div class="space-y-6">
+                <!-- Team Stats -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Team Overview</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Total Members</span>
+                            <span class="font-bold text-dark-green">{{ team.members.count }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Lead Contractor</span>
+                            <span class="font-medium">{{ team.lead_contractor.username }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Team Status</span>
+                            <span class="font-medium">{{ team.get_status_display }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Project Budget</span>
+                            <span class="font-bold text-dark-green">
+                                {{ team.project.budget_range|default:"Not specified" }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Team Created</span>
+                            <span class="font-medium">{{ team.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Council Contact -->
+                <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                    <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-4 h-4"></i>
+                        Council Contact
+                    </h3>
+                    <div class="space-y-3">
+                        <p class="font-medium">{{ team.project.council.get_display_name }}</p>
+                        {% if team.project.council.email %}
+                            <div class="flex items-center gap-2 text-sm text-slate-600">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                {{ team.project.council.email }}
+                            </div>
+                        {% endif %}
+                        {% if team.project.council.profile.phone %}
+                            <div class="flex items-center gap-2 text-sm text-slate-600">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                {{ team.project.council.profile.phone }}
+                            </div>
+                        {% endif %}
+                        <p class="text-sm text-slate-500 mt-2">
+                            For team-related inquiries, contact the council directly.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Team Actions -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'project_detail' team.project.id %}" 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="building-2" class="w-5 h-5 text-dark-green"></i>
+                            View Project Details
+                        </a>
+                        
+                        {% if user.user_type == 'council' and user == team.project.council %}
+                            <a href="{% url 'team_update' team.id %}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="edit" class="w-5 h-5 text-dark-green"></i>
+                                Edit Team Details
+                            </a>
+                            <a href="{% url 'team_add_member' team.id %}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="user-plus" class="w-5 h-5 text-dark-green"></i>
+                                Add Team Member
+                            </a>
+                            <a href="{% url 'team_list' %}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="users" class="w-5 h-5 text-dark-green"></i>
+                                View All Teams
+                            </a>
+                        {% endif %}
+                        
+                        {% if user in team.members.all or user == team.lead_contractor %}
+                            <a href="{% url 'my_teams' %}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="arrow-left" class="w-5 h-5 text-dark-green"></i>
+                                Back to My Teams
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Team Roles Legend -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Team Roles</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-800">Lead Contractor</p>
+                                <p class="text-xs text-slate-600">Overall project responsibility</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-800">Supervisor</p>
+                                <p class="text-xs text-slate-600">On-site supervision</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-800">Subcontractor</p>
+                                <p class="text-xs text-slate-600">Specialized work</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-800">Worker</p>
+                                <p class="text-xs text-slate-600">General labor</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Team member removal confirmation
+    document.addEventListener('DOMContentLoaded', function() {
+        const removeLinks = document.querySelectorAll('a[href*="team_remove_member"]');
+        removeLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to remove this member from the team?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

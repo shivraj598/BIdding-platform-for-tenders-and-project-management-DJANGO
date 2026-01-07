@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Team Management{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <a href="{% url 'council_dashboard' %}" class="text-slate-600 hover:text-dark-green transition">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                            </a>
+                            <h1 class="text-3xl font-bold text-slate-800">Team Management</h1>
+                        </div>
+                        <p class="text-slate-600 mt-2">Form and manage contractor teams for awarded packages</p>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="flex flex-wrap gap-4">
+                        <div class="bg-emerald-50 px-4 py-2 rounded-lg">
+                            <p class="text-sm text-slate-600">Total Teams</p>
+                        <p class="text-xl font-bold text-dark-green">{{ total_teams }}</p>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Active</p>
+                        <p class="text-xl font-bold text-blue-600">{{ active_teams }}</p>
+                    </div>
+                    <div class="bg-amber-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Forming</p>
+                        <p class="text-xl font-bold text-amber-600">{{ forming_teams }}</p>
+                    </div>
+                    <div class="bg-green-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Completed</p>
+                        <p class="text-xl font-bold text-green-600">{{ completed_teams }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <!-- Search -->
+                <div class="flex-1">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="text" placeholder="Search teams by name or project..." 
+                               class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none"
+                               id="search-input">
+                    </div>
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="w-full md:w-auto">
+                    <select class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white"
+                            id="status-filter">
+                        <option value="">All Status</option>
+                        <option value="forming">Forming</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                
+                <!-- Create Team Button (Council Only) -->
+                {% if user.user_type == 'council' %}
+                <a href="{% url 'team_create' %}" 
+                   class="bg-dark-green text-white px-4 py-3 rounded-xl font-medium hover-bg-green flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    Create New Team
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Teams Grid -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if teams %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for team in teams %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <!-- Team Header -->
+                    <div class="p-6 border-b border-slate-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ team.name }}</h3>
+                                <p class="text-sm text-slate-600">{{ team.project.title|truncatechars:40 }}</p>
+                            </div>
+                            <span class="text-xs font-medium px-3 py-1 rounded-full 
+                                {% if team.status == 'forming' %}bg-amber-100 text-amber-800
+                                {% elif team.status == 'active' %}bg-blue-100 text-blue-800
+                                {% elif team.status == 'completed' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ team.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <!-- Project Info -->
+                        <div class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                            <i data-lucide="building-2" class="w-4 h-4"></i>
+                            <span>{{ team.project.location|truncatechars:30 }}</span>
+                        </div>
+                        
+                        <!-- Team Stats -->
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-slate-500">Team Members</p>
+                                <p class="font-bold text-dark-green">{{ team.members.count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Total Contract Value</p>
+                                <p class="font-bold text-dark-green" id="team-value-{{ team.id }}">
+                                    Calculating...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Members Preview -->
+                    <div class="p-6 border-b border-slate-100">
+                        <h4 class="font-medium text-slate-700 mb-3">Team Members</h4>
+                        <div class="space-y-3">
+                            <!-- Lead Contractor -->
+                            {% if team.lead_contractor %}
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="crown" class="w-4 h-4 text-emerald-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-800">Lead: {{ team.lead_contractor.get_display_name }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Other Members (Preview) -->
+                            {% for member in team.members.all|slice:"0:3" %}
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="user" class="w-4 h-4 text-slate-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-slate-700">{{ member.contractor.get_display_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ member.get_role_display }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if team.members.count > 3 %}
+                            <div class="text-center">
+                                <p class="text-xs text-slate-500">+{{ team.members.count|add:"-3" }} more members</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Team Actions -->
+                    <div class="p-6 bg-slate-50">
+                        <div class="flex flex-wrap gap-3">
+                            <a href="{% url 'team_detail' team.id %}" 
+                               class="flex-1 text-center bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green text-sm">
+                                View Team
+                            </a>
+                            
+                            {% if user.user_type == 'council' %}
+                            <a href="{% url 'team_update' team.id %}" 
+                               class="flex-1 text-center bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 text-sm">
+                                Manage
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{% url 'project_detail' team.project.id %}" 
+                               class="flex-1 text-center bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 text-sm">
+                                Project
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-4 py-2 bg-dark-green text-white rounded-lg font-medium">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="users" class="w-10 h-10 text-slate-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-2">
+                    {% if user.user_type == 'council' %}
+                        No Teams Created Yet
+                    {% else %}
+                        No Team Assignments
+                    {% endif %}
+                </h3>
+                <p class="text-slate-600 mb-6 max-w-md mx-auto">
+                    {% if user.user_type == 'council' %}
+                        Teams will appear here once you start forming them for awarded packages. Create your first team to get started.
+                    {% else %}
+                        You haven't been assigned to any teams yet. Teams will appear here once councils add you to project teams.
+                    {% endif %}
+                </p>
+                <div class="space-x-3">
+                    {% if user.user_type == 'council' %}
+                        <a href="{% url 'bid_review_list' %}" 
+                           class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                            Review Bids to Award
+                        </a>
+                        <a href="{% url 'team_create' %}" 
+                           class="inline-block bg-white border border-dark-green text-dark-green px-6 py-3 rounded-xl font-medium hover:bg-emerald-50">
+                            Create First Team
+                        </a>
+                    {% else %}
+                        <a href="{% url 'awarded_projects' %}" 
+                           class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                            View Awarded Projects
+                        </a>
+                        <a href="{% url 'available_projects' %}" 
+                           class="inline-block bg-white border border-dark-green text-dark-green px-6 py-3 rounded-xl font-medium hover:bg-emerald-50">
+                            Browse Projects
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Team Formation Process -->
+    {% if user.profile.user_type == 'council' %}
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-8">
+            <h3 class="text-xl font-bold text-dark-green mb-6 flex items-center gap-2">
+                <i data-lucide="git-branch" class="w-5 h-5"></i>
+                Team Formation Process
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200">
+                        <span class="font-bold text-dark-green">1</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Award Package</h4>
+                    <p class="text-sm text-slate-600">Accept a contractor's bid to award the package</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200">
+                        <span class="font-bold text-dark-green">2</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Auto-Generate Team</h4>
+                    <p class="text-sm text-slate-600">System automatically forms initial team</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200">
+                        <span class="font-bold text-dark-green">3</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Customize Team</h4>
+                    <p class="text-sm text-slate-600">Add, remove, or reassign contractors</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-200">
+                        <span class="font-bold text-dark-green">4</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 mb-2">Project Execution</h4>
+                    <p class="text-sm text-slate-600">Team begins work on the package</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-8 border-t border-emerald-100">
+                <h4 class="font-bold text-dark-green mb-4">Quick Team Management Actions</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a href="{% url 'bid_review_list' %}?status=accepted" 
+                       class="bg-white p-4 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-600 p-2 rounded-lg">
+                                <i data-lucide="award" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-dark-green">Recently Awarded</h5>
+                                <p class="text-sm text-slate-600">Form teams for newly awarded packages</p>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'team_create' %}" 
+                       class="bg-white p-4 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-dark-green p-2 rounded-lg">
+                                <i data-lucide="users" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-dark-green">Create New Team</h5>
+                                <p class="text-sm text-slate-600">Manually create a team for any package</p>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="#" 
+                       class="bg-white p-4 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-600 p-2 rounded-lg">
+                                <i data-lucide="user-plus" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-dark-green">Add Contractors</h5>
+                                <p class="text-sm text-slate-600">Find contractors for your teams</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Filter functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
+        
+        function updateURL() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (searchInput.value) {
+                params.set('search', searchInput.value);
+            } else {
+                params.delete('search');
+            }
+            
+            if (statusFilter.value) {
+                params.set('status', statusFilter.value);
+            } else {
+                params.delete('status');
+            }
+            
+            // Update URL without reloading (for demo)
+            const newUrl = window.location.pathname + '?' + params.toString();
+            window.history.replaceState({}, '', newUrl);
+            
+            console.log('Filters updated:', {
+                search: searchInput.value,
+                status: statusFilter.value
+            });
+        }
+        
+        // Debounce search
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateURL, 500);
+        });
+        
+        statusFilter.addEventListener('change', updateURL);
+        
+        // Set current filter values from URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('search')) {
+            searchInput.value = params.get('search');
+        }
+        if (params.get('status')) {
+            statusFilter.value = params.get('status');
+        }
+    });
+</script>
+    </div>
+</div>
+{% endblock %}

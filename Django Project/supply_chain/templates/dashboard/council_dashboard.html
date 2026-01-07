@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Council Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-100">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-slate-200 hidden lg:block p-6 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+        <!-- Council Info -->
+        <div class="mb-8">
+            <div class="w-16 h-16 bg-dark-green rounded-full flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="building-2" class="w-8 h-8 text-white"></i>
+            </div>
+            <h3 class="text-center font-bold text-dark-green">{{ user.username }}</h3>
+            <p class="text-center text-xs text-slate-500">Council Admin</p>
+        </div>
+        
+        <!-- Navigation -->
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Council Menu</h2>
+        <nav class="space-y-2">
+            <a href="{% url 'council_dashboard' %}" 
+               class="flex items-center gap-3 p-3 {% if request.resolver_match.url_name == 'council_dashboard' %}bg-emerald-50 text-dark-green{% else %}text-slate-600 hover:bg-slate-50{% endif %} rounded-xl font-medium transition">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </a>
+            <a href="{% url 'project_list' %}" 
+               class="flex items-center gap-3 p-3 {% if 'project' in request.resolver_match.url_name %}bg-emerald-50 text-dark-green{% else %}text-slate-600 hover:bg-slate-50{% endif %} rounded-xl transition">
+                <i data-lucide="folder" class="w-5 h-5"></i> All Projects
+            </a>
+            <a href="{% url 'project_create' %}" 
+               class="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i> Create Project
+            </a>
+            <a href="{% url 'bid_review_list' %}" 
+               class="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition">
+                <i data-lucide="file-text" class="w-5 h-5"></i> Bids Review
+                {% if pending_bids_count > 0 %}
+                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ pending_bids_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'team_list' %}" 
+               class="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition">
+                <i data-lucide="users" class="w-5 h-5"></i> Teams
+            </a>
+            <a href="{% url 'report_list' %}" 
+               class="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition">
+                <i data-lucide="clipboard-list" class="w-5 h-5"></i> Reports
+            </a>
+            <a href="{% url 'profile' %}" 
+               class="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition">
+                <i data-lucide="settings" class="w-5 h-5"></i> Settings
+            </a>
+        </nav>
+        
+        <!-- Quick Stats -->
+        <div class="mt-8 pt-8 border-t border-slate-100">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Quick Stats</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-slate-600">Active Projects</span>
+                    <span class="font-bold text-dark-green">{{ stats.active_projects }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-slate-600">Open Packages</span>
+                    <span class="font-bold text-dark-green">{{ stats.open_packages }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-slate-600">Pending Bids</span>
+                    <span class="font-bold text-amber-600">{{ stats.pending_bids }}</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <h1 class="text-2xl lg:text-3xl font-bold text-slate-800">Council Dashboard</h1>
+                <p class="text-slate-500">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'project_create' %}" 
+                   class="bg-dark-green text-white px-4 py-2.5 rounded-xl font-medium hover-bg-green flex items-center gap-2 justify-center">
+                    <i data-lucide="plus" class="w-4 h-4"></i> New Project
+                </a>
+                <a href="{% url 'bid_review_list' %}" 
+                   class="bg-white border border-dark-green text-dark-green px-4 py-2.5 rounded-xl font-medium hover:bg-emerald-50 flex items-center gap-2 justify-center">
+                    <i data-lucide="file-check" class="w-4 h-4"></i> Review Bids
+                </a>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Total Projects</p>
+                        <h2 class="text-3xl font-bold text-dark-green mt-1">{{ stats.total_projects }}</h2>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl">
+                        <i data-lucide="folder" class="w-6 h-6 text-dark-green"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Active Projects</p>
+                        <h2 class="text-3xl font-bold text-dark-green mt-1">{{ stats.active_projects }}</h2>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl">
+                        <i data-lucide="activity" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Pending Bids</p>
+                        <h2 class="text-3xl font-bold text-amber-600 mt-1">{{ stats.pending_bids }}</h2>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl">
+                        <i data-lucide="clock" class="w-6 h-6 text-amber-600"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-500 text-sm">Accepted Contracts</p>
+                        <h2 class="text-3xl font-bold text-emerald-600 mt-1">{{ stats.accepted_bids }}</h2>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-xl">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Projects & Recent Bids -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Projects -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Recent Projects</h3>
+                    <a href="{% url 'project_list' %}" class="text-dark-green text-sm font-medium hover:underline">Show More</a>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    {% for project in recent_projects %}
+                    <div class="p-6 hover:bg-slate-50 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-slate-800">{{ project.title|truncatechars:40 }}</h4>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full 
+                                {% if project.status == 'published' %}bg-emerald-100 text-emerald-800
+                                {% elif project.status == 'draft' %}bg-slate-100 text-slate-800
+                                {% elif project.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-3">{{ project.description|truncatechars:80 }}</p>
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Created: {{ project.created_at|date:"M d, Y" }}</span>
+                            <div class="flex gap-2">
+                                <a href="{% url 'project_detail' project.id %}" class="text-dark-green hover:underline">View</a>
+                                <a href="{% url 'project_update' project.id %}" class="text-dark-green hover:underline">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-slate-500">
+                        <i data-lucide="folder-x" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+                        <p>No projects created yet</p>
+                        <a href="{% url 'project_create' %}" class="inline-block mt-2 text-dark-green font-medium hover:underline">Create your first project</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Recent Bids -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Recent Bids</h3>
+                    <a href="{% url 'bid_review_list' %}" class="text-dark-green text-sm font-medium hover:underline">Show More</a>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    {% for bid in recent_bids %}
+                    <div class="p-6 hover:bg-slate-50 transition">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-slate-800">{{ bid.package.title|truncatechars:30 }}</h4>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full 
+                                {% if bid.status == 'pending' %}bg-amber-100 text-amber-800
+                                {% elif bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                                {% elif bid.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ bid.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-600 mb-2">By: {{ bid.contractor.profile.company_name|default:bid.contractor.username }}</p>
+                        <p class="text-sm font-medium text-dark-green mb-3">Amount: ${{ bid.bid_amount }}</p>
+                        <div class="flex justify-between items-center text-xs text-slate-500">
+                            <span>Submitted: {{ bid.submitted_at|date:"M d, Y" }}</span>
+                            <a href="{% url 'bid_review_detail' bid.id %}" class="text-dark-green hover:underline">Review</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-slate-500">
+                        <i data-lucide="file-text" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+                        <p>No bids to review yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="{% url 'project_create' %}" class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 hover:bg-emerald-100 transition group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-dark-green p-3 rounded-xl">
+                        <i data-lucide="plus" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-dark-green">Create New Project</h4>
+                        <p class="text-sm text-slate-600 mt-1">Publish a new infrastructure project</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'bid_review_list' %}" class="bg-amber-50 p-6 rounded-2xl border border-amber-100 hover:bg-amber-100 transition group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-amber-600 p-3 rounded-xl">
+                        <i data-lucide="file-check" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-amber-800">Review Pending Bids</h4>
+                        <p class="text-sm text-slate-600 mt-1">{{ stats.pending_bids }} bids awaiting review</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'team_list' %}" class="bg-blue-50 p-6 rounded-2xl border border-blue-100 hover:bg-blue-100 transition group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 p-3 rounded-xl">
+                        <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-blue-800">Manage Teams</h4>
+                        <p class="text-sm text-slate-600 mt-1">Form and manage contractor teams</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Bottom Navigation -->
+<div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 z-40">
+    <div class="flex justify-around items-center">
+        <a href="{% url 'council_dashboard' %}" class="flex flex-col items-center text-dark-green">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span class="text-xs mt-1">Dashboard</span>
+        </a>
+        <a href="{% url 'project_list' %}" class="flex flex-col items-center text-slate-600">
+            <i data-lucide="folder" class="w-5 h-5"></i>
+            <span class="text-xs mt-1">Projects</span>
+        </a>
+        <a href="{% url 'project_create' %}" class="flex flex-col items-center text-slate-600">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span class="text-xs mt-1">Create</span>
+        </a>
+        <a href="{% url 'bid_review_list' %}" class="flex flex-col items-center text-slate-600 relative">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+            <span class="text-xs mt-1">Bids</span>
+            {% if pending_bids_count > 0 %}
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{{ pending_bids_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'profile' %}" class="flex flex-col items-center text-slate-600">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-xs mt-1">Settings</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    // Update sidebar active state based on current page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight current page in sidebar
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('aside nav a');
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('bg-emerald-50', 'text-dark-green');
+                link.classList.remove('text-slate-600', 'hover:bg-slate-50');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Report: {{ report.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Report Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+                <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'report_list' %}" class="hover:text-dark-green">Reports</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-dark-green font-medium">{{ report.title|truncatechars:40 }}</span>
+            </nav>
+            
+            <!-- Report Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h1 class="text-3xl font-bold text-slate-800">{{ report.title }}</h1>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full 
+                            {% if report.report_type == 'progress' %}bg-emerald-100 text-emerald-800
+                            {% elif report.report_type == 'financial' %}bg-blue-100 text-blue-800
+                            {% elif report.report_type == 'quality' %}bg-amber-100 text-amber-800
+                            {% elif report.report_type == 'safety' %}bg-red-100 text-red-800
+                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                            {{ report.get_report_type_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="folder" class="w-4 h-4"></i>
+                            <span>Project: {{ report.project.title }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Created: {{ report.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span>Author: {{ report.created_by.username }}</span>
+                        </div>
+                        {% if report.document %}
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>Document attached</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'report_update' report.id %}" 
+                       class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 flex items-center gap-2">
+                        <i data-lucide="edit" class="w-4 h-4"></i> Edit Report
+                    </a>
+                    <a href="{% url 'report_list' %}" 
+                       class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> All Reports
+                    </a>
+                    {% if report.document %}
+                    <a href="{{ report.document.url }}" target="_blank" 
+                       class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i> Download
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Report Content -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                    <div class="prose max-w-none">
+                        {{ report.content|linebreaks }}
+                    </div>
+                    
+                    <!-- Document Preview -->
+                    {% if report.document %}
+                    <div class="mt-8 pt-8 border-t border-slate-100">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="paperclip" class="w-5 h-5 text-dark-green"></i>
+                            Attached Document
+                        </h3>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-dark-green p-3 rounded-lg">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-slate-800">{{ report.document.name|cut:"reports/" }}</p>
+                                    <p class="text-sm text-slate-600">
+                                        {% widthratio report.document.size 1024 1 %} KB • 
+                                        {{ report.document.name|slice:"-3:"|upper }} file
+                                    </p>
+                                </div>
+                                <div class="flex gap-3">
+                                    <a href="{{ report.document.url }}" target="_blank" 
+                                       class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green">
+                                        View
+                                    </a>
+                                    <a href="{{ report.document.url }}" download 
+                                       class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50">
+                                        Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Related Information -->
+                {% if report.report_type == 'progress' %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h3 class="font-bold text-slate-800 mb-6">Project Progress Summary</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="text-center p-6 border border-slate-200 rounded-xl">
+                            <p class="text-sm text-slate-500">Project Status</p>
+                            <p class="text-2xl font-bold text-dark-green mt-2">{{ project.status|title }}</p>
+                        </div>
+                        <div class="text-center p-6 border border-slate-200 rounded-xl">
+                            <p class="text-sm text-slate-500">Days Remaining</p>
+                            <p class="text-2xl font-bold {% if project.days_remaining < 7 %}text-red-600{% else %}text-amber-600{% endif %} mt-2">
+                                {{ project.days_remaining }}
+                            </p>
+                        </div>
+                        <div class="text-center p-6 border border-slate-200 rounded-xl">
+                            <p class="text-sm text-slate-500">Completion Rate</p>
+                            <p class="text-2xl font-bold text-emerald-600 mt-2">{{ project.completion_rate }}%</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <a href="{% url 'project_detail' report.project.id %}" 
+                           class="text-dark-green hover:underline font-medium">
+                            View Full Project Details →
+                        </a>
+                        <a href="{% url 'team_list' %}?project={{ report.project.id }}" 
+                           class="text-dark-green hover:underline font-medium">
+                            View Project Teams →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Report Metadata -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Report Details</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-slate-500">Report Type</p>
+                            <p class="font-medium">{{ report.get_report_type_display }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Project</p>
+                            <p class="font-medium">{{ report.project.title }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Created By</p>
+                            <p class="font-medium">{{ report.created_by.username }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Created Date</p>
+                            <p class="font-medium">{{ report.created_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Last Updated</p>
+                            <p class="font-medium">{{ report.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        {% if report.document %}
+                        <div>
+                            <p class="text-sm text-slate-500">Document Size</p>
+                            <p class="font-medium">{% widthratio report.document.size 1024 1 %} KB</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Related Actions -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'report_update' report.id %}" 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="edit" class="w-5 h-5 text-dark-green"></i>
+                            Edit Report
+                        </a>
+                        
+                        <a href="{% url 'report_create' %}?project={{ report.project.id }}&type={{ report.report_type }}" 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="copy" class="w-5 h-5 text-dark-green"></i>
+                            Create Similar Report
+                        </a>
+                        
+                        {% if report.document %}
+                        <a href="{{ report.document.url }}" download 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="download" class="w-5 h-5 text-dark-green"></i>
+                            Download Document
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'report_list' %}" 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="arrow-left" class="w-5 h-5 text-dark-green"></i>
+                            Back to Reports
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Project Quick Info -->
+                <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                    <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                        <i data-lucide="folder" class="w-4 h-4"></i>
+                        Project Information
+                    </h3>
+                    <div class="space-y-3">
+                        <h4 class="font-medium text-slate-800">{{ report.project.title }}</h4>
+                        <div class="text-sm text-slate-600">
+                            <p class="flex items-center gap-2 mb-1">
+                                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                {{ report.project.location }}
+                            </p>
+                            <p class="flex items-center gap-2 mb-1">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                {{ report.project.start_date|date:"M d, Y" }} - {{ report.project.end_date|date:"M d, Y" }}
+                            </p>
+                            <p class="flex items-center gap-2">
+                                <i data-lucide="package" class="w-4 h-4"></i>
+                                {{ report.project.packages.count }} packages
+                            </p>
+                        </div>
+                        <a href="{% url 'project_detail' report.project.id %}" 
+                           class="inline-block w-full text-center mt-2 bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50">
+                            View Project
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Report History -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Report History</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Created</p>
+                                <p class="text-slate-500">{{ report.created_at|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="bg-slate-100 px-2 py-1 rounded text-xs">Initial</div>
+                        </div>
+                        
+                        {% if report.updated_at != report.created_at %}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-700">Last Updated</p>
+                                <p class="text-slate-500">{{ report.updated_at|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Updated</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="pt-3 border-t border-slate-200">
+                            <p class="text-slate-500">Version: 1.0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Prose styling for report content */
+    .prose {
+        color: #374151;
+        line-height: 1.75;
+    }
+    
+    .prose h1, .prose h2, .prose h3, .prose h4 {
+        color: #1f2937;
+        font-weight: 600;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+    
+    .prose p {
+        margin-bottom: 1em;
+    }
+    
+    .prose ul {
+        list-style-type: disc;
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+    }
+    
+    .prose ol {
+        list-style-type: decimal;
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+    }
+    
+    .prose li {
+        margin-bottom: 0.5em;
+    }
+    
+    .prose strong {
+        font-weight: 600;
+        color: #1f2937;
+    }
+</style>
+
+<script>
+    // Print report functionality
+    function printReport() {
+        window.print();
+    }
+    
+    // Share report functionality
+    function shareReport() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ report.title }}',
+                text: 'Check out this report from Leeds Supply Chain',
+                url: window.location.href,
+            })
+            .then(() => console.log('Report shared successfully'))
+            .catch((error) => console.log('Error sharing:', error));
+        } else {
+            // Fallback for browsers that don't support Web Share API
+            navigator.clipboard.writeText(window.location.href)
+                .then(() => alert('Report link copied to clipboard!'))
+                .catch(err => console.error('Failed to copy:', err));
+        }
+    }
+    
+    // Add print and share buttons dynamically
+    document.addEventListener('DOMContentLoaded', function() {
+        const actionButtons = document.querySelector('.flex.flex-wrap.gap-3');
+        if (actionButtons) {
+            // Add print button
+            const printButton = document.createElement('button');
+            printButton.className = 'bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2';
+            printButton.innerHTML = '<i data-lucide="printer" class="w-4 h-4"></i> Print';
+            printButton.onclick = printReport;
+            actionButtons.appendChild(printButton);
+            
+            // Add share button
+            const shareButton = document.createElement('button');
+            shareButton.className = 'bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2';
+            shareButton.innerHTML = '<i data-lucide="share-2" class="w-4 h-4"></i> Share';
+            shareButton.onclick = shareReport;
+            actionButtons.appendChild(shareButton);
+            
+            // Reinitialize icons
+            lucide.createIcons();
+        }
+        
+        // Format document size for better readability
+        const docSizeElements = document.querySelectorAll('[class*="widthratio"]');
+        docSizeElements.forEach(element => {
+            const size = parseFloat(element.textContent);
+            if (size > 1024) {
+                const mbSize = (size / 1024).toFixed(1);
+                element.textContent = `${mbSize} MB`;
+            }
+        });
+    });
+</script>
+{% endblock %}

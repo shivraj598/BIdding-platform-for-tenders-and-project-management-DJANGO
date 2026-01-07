@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Bid Review{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1">
+        <!-- Header -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <a href="{% url 'council_dashboard' %}" class="text-slate-600 hover:text-dark-green transition">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                            </a>
+                            <h1 class="text-3xl font-bold text-slate-800">Bid Review & Management</h1>
+                        </div>
+                        <p class="text-slate-600 mt-2">Review, evaluate, and manage contractor bids for your projects</p>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="flex flex-wrap gap-4">
+                        <div class="bg-emerald-50 px-4 py-2 rounded-lg">
+                            <p class="text-sm text-slate-600">Total Bids</p>
+                        <p class="text-xl font-bold text-dark-green">{{ total_bids }}</p>
+                    </div>
+                    <div class="bg-amber-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Pending</p>
+                        <p class="text-xl font-bold text-amber-600">{{ pending_bids }}</p>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Under Review</p>
+                        <p class="text-xl font-bold text-blue-600">{{ under_review_bids }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <form method="GET" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Project Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Project</label>
+                        <select name="project" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="">All Projects</option>
+                            {% for project in my_projects %}
+                                <option value="{{ project.id }}" {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ project.title|truncatechars:30 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                        <select name="status" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="">All Status</option>
+                            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Review</option>
+                            <option value="under_review" {% if selected_status == 'under_review' %}selected{% endif %}>Under Review</option>
+                            <option value="accepted" {% if selected_status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="withdrawn" {% if selected_status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort By -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Sort By</label>
+                        <select name="sort" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="-submitted_at" {% if selected_sort == '-submitted_at' %}selected{% endif %}>Newest First</option>
+                            <option value="submitted_at" {% if selected_sort == 'submitted_at' %}selected{% endif %}>Oldest First</option>
+                            <option value="bid_amount" {% if selected_sort == 'bid_amount' %}selected{% endif %}>Lowest Bid</option>
+                            <option value="-bid_amount" {% if selected_sort == '-bid_amount' %}selected{% endif %}>Highest Bid</option>
+                            <option value="duration_days" {% if selected_sort == 'duration_days' %}selected{% endif %}>Shortest Duration</option>
+                            <option value="-duration_days" {% if selected_sort == '-duration_days' %}selected{% endif %}>Longest Duration</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                            <input type="text" name="search" placeholder="Contractor or package..." 
+                                   value="{{ search_query|default:'' }}"
+                                   class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-slate-600">
+                        Showing {{ bids.count }} of {{ total_bids }} bids
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="reset" onclick="window.location.href='{% url 'bid_review_list' %}';" 
+                                class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50">
+                            Reset Filters
+                        </button>
+                        <button type="submit" 
+                                class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                            <i data-lucide="filter" class="w-4 h-4"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bids Table -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if bids %}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Table Header -->
+                <div class="grid grid-cols-12 gap-4 p-6 border-b border-slate-100 bg-slate-50 text-sm font-medium text-slate-600 uppercase tracking-wider">
+                    <div class="col-span-4">Package & Contractor</div>
+                    <div class="col-span-2 text-center">Bid Amount</div>
+                    <div class="col-span-2 text-center">Duration</div>
+                    <div class="col-span-2 text-center">Status</div>
+                    <div class="col-span-2 text-center">Actions</div>
+                </div>
+                
+                <!-- Bids List -->
+                <div class="divide-y divide-slate-100">
+                    {% for bid in bids %}
+                    <div class="grid grid-cols-12 gap-4 p-6 hover:bg-slate-50 transition items-center">
+                        <!-- Package & Contractor -->
+                        <div class="col-span-4">
+                            <div class="flex items-start gap-3">
+                                <div class="bg-emerald-100 p-2 rounded-lg">
+                                    <i data-lucide="package" class="w-5 h-5 text-dark-green"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 mb-1">{{ bid.package.title|truncatechars:40 }}</h4>
+                                    <p class="text-sm text-slate-600 mb-1">{{ bid.package.project.title|truncatechars:30 }}</p>
+                                    <p class="text-xs text-slate-500">
+                                        <span class="font-medium">{{ bid.contractor.profile.company_name|default:bid.contractor.username }}</span>
+                                        • Submitted: {{ bid.submitted_at|date:"M d, Y" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bid Amount -->
+                        <div class="col-span-2 text-center">
+                            <div class="inline-block">
+                                <p class="text-2xl font-bold text-dark-green">${{ bid.bid_amount }}</p>
+                                {% if bid.package.estimated_cost %}
+                                    <p class="text-xs text-slate-500">
+                                        {% if bid.bid_amount < bid.package.estimated_cost %}
+                                            <span class="text-emerald-600">↓ {{ bid.percentage_below_estimate|floatformat:1 }}% below estimate</span>
+                                        {% elif bid.bid_amount > bid.package.estimated_cost %}
+                                            <span class="text-amber-600">↑ {{ bid.percentage_above_estimate|floatformat:1 }}% above estimate</span>
+                                        {% else %}
+                                            <span class="text-slate-500">Matches estimate</span>
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Duration -->
+                        <div class="col-span-2 text-center">
+                            <div class="inline-block">
+                                <p class="text-lg font-bold text-slate-800">{{ bid.duration_days }} days</p>
+                                <p class="text-xs text-slate-500">{{ bid.duration_weeks }} weeks</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="col-span-2 text-center">
+                            <span class="inline-block text-sm font-medium px-3 py-1 rounded-full 
+                                {% if bid.status == 'pending' %}bg-amber-100 text-amber-800
+                                {% elif bid.status == 'under_review' %}bg-blue-100 text-blue-800
+                                {% elif bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                                {% elif bid.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ bid.get_status_display }}
+                            </span>
+                            {% if bid.reviewed_at %}
+                                <p class="text-xs text-slate-500 mt-1">Reviewed {{ bid.reviewed_at|date:"M d" }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="col-span-2">
+                            <div class="flex justify-center gap-2">
+                                <a href="{% url 'bid_review_detail' bid.id %}" 
+                                   class="bg-dark-green text-white p-2 rounded-lg hover-bg-green transition"
+                                   title="Review Bid">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                                
+                                {% if bid.proposal_document %}
+                                <a href="{{ bid.proposal_document.url }}" target="_blank" 
+                                   class="bg-blue-100 text-blue-600 p-2 rounded-lg hover:bg-blue-200 transition"
+                                   title="View Document">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-4 py-2 bg-dark-green text-white rounded-lg font-medium">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="file-search" class="w-10 h-10 text-slate-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-2">No Bids Found</h3>
+                <p class="text-slate-600 mb-6 max-w-md mx-auto">
+                    {% if selected_project or selected_status or search_query %}
+                        No bids match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        No bids have been submitted to your projects yet. Bids will appear here once contractors submit proposals.
+                    {% endif %}
+                </p>
+                <div class="space-x-3">
+                    <a href="{% url 'project_list' %}" 
+                       class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                        View Projects
+                    </a>
+                    {% if selected_project or selected_status or search_query %}
+                        <a href="{% url 'bid_review_list' %}" 
+                           class="inline-block bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-xl font-medium hover:bg-slate-50">
+                            Clear Filters
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Quick Actions Panel -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-8">
+            <h3 class="text-xl font-bold text-dark-green mb-6 flex items-center gap-2">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+                Quick Bid Management
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-emerald-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-amber-100 p-3 rounded-lg">
+                            <i data-lucide="clock" class="w-6 h-6 text-amber-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Pending Review</h4>
+                            <p class="text-3xl font-bold text-amber-600 mt-1">{{ pending_bids }}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600">Bids awaiting initial review and evaluation.</p>
+                    {% if pending_bids > 0 %}
+                        <a href="{% url 'bid_review_list' %}?status=pending" 
+                           class="inline-block mt-3 text-dark-green font-medium hover:underline text-sm">
+                            Review Pending Bids →
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl border border-emerald-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-blue-100 p-3 rounded-lg">
+                            <i data-lucide="file-check" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Under Review</h4>
+                            <p class="text-3xl font-bold text-blue-600 mt-1">{{ under_review_bids }}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600">Bids currently being evaluated by your team.</p>
+                    {% if under_review_bids > 0 %}
+                        <a href="{% url 'bid_review_list' %}?status=under_review" 
+                           class="inline-block mt-3 text-dark-green font-medium hover:underline text-sm">
+                            Continue Evaluation →
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl border border-emerald-100">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-emerald-100 p-3 rounded-lg">
+                            <i data-lucide="award" class="w-6 h-6 text-emerald-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Accepted</h4>
+                            <p class="text-3xl font-bold text-emerald-600 mt-1">{{ accepted_bids }}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600">Successfully awarded bids ready for team formation.</p>
+                    {% if accepted_bids > 0 %}
+                        <a href="{% url 'team_list' %}" 
+                           class="inline-block mt-3 text-dark-green font-medium hover:underline text-sm">
+                            Form Teams →
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-submit form on filter change (optional)
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterSelects = document.querySelectorAll('select[name="project"], select[name="status"], select[name="sort"]');
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+        
+        // Add debounced search
+        const searchInput = document.querySelector('input[name="search"]');
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    });
+</script>
+    </div>
+</div>
+{% endblock %}

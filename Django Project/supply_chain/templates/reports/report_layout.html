@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title mb-0">{{ report_title }}</h2>
+                            <small class="text-light">Generated on {{ generated_date }}</small>
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-light btn-sm" onclick="window.print()">
+                                <i class="fas fa-print"></i> Print Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="report-content">
+                        <!-- Executive Summary -->
+                        {% if executive_summary %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Executive Summary</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Project:</strong> {{ project.title }}</p>
+                                    <p><strong>Status:</strong> <span class="badge bg-{{ status_color }}">{{ project.get_status_display }}</span></p>
+                                    <p><strong>Location:</strong> {{ project.location }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Progress:</strong> {{ progress_percentage }}%</p>
+                                    <p><strong>Total Packages:</strong> {{ total_packages }}</p>
+                                    <p><strong>Completed:</strong> {{ completed_packages }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Package Status -->
+                        {% if package_status %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Package Status Summary</h3>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="badge bg-success">Completed</span></td>
+                                            <td>{{ completed_packages }}</td>
+                                            <td>{{ completed_percentage }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="badge bg-warning">In Progress</span></td>
+                                            <td>{{ in_progress_packages }}</td>
+                                            <td>{{ in_progress_percentage }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="badge bg-info">Awarded</span></td>
+                                            <td>{{ awarded_packages }}</td>
+                                            <td>{{ awarded_percentage }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="badge bg-secondary">Open</span></td>
+                                            <td>{{ open_packages }}</td>
+                                            <td>{{ open_percentage }}%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Bidding Activity -->
+                        {% if bidding_activity %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Bidding Activity</h3>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{ total_bids }}</h4>
+                                            <p class="card-text">Total Bids</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{ accepted_bids }}</h4>
+                                            <p class="card-text">Accepted Bids</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="card-title">{{ bid_acceptance_rate }}%</h4>
+                                            <p class="card-text">Acceptance Rate</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Package Details -->
+                        {% if packages %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Package Details</h3>
+                            <div class="row">
+                                {% for package in packages %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ package.title }}</h5>
+                                            <p class="card-text">
+                                                <strong>Type:</strong> {{ package.get_package_type_display }}<br>
+                                                <strong>Status:</strong> <span class="badge bg-{{ package.status_color }}">{{ package.get_status_display }}</span><br>
+                                                {% if package.awarded_bid %}
+                                                <strong>Contractor:</strong> {{ package.awarded_bid.contractor.get_display_name }}<br>
+                                                <strong>Amount:</strong> ${{ package.awarded_bid.bid_amount|floatformat:2 }}
+                                                {% else %}
+                                                <strong>Status:</strong> Not awarded
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Team Information -->
+                        {% if team_info %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Team Information</h3>
+                            {% if team %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ team.name }}</h5>
+                                    <p class="card-text">
+                                        <strong>Status:</strong> {{ team.get_status_display }}<br>
+                                        <strong>Members:</strong> {{ team.members.count }}<br>
+                                        <strong>Lead:</strong> {{ team.lead_contractor.get_display_name if team.lead_contractor else 'Not assigned' }}
+                                    </p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p>No formal team structure has been established for this project.</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Key Metrics -->
+                        {% if key_metrics %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Key Metrics</h3>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="metric-card text-center p-3 bg-light rounded">
+                                        <h4>{{ progress_percentage }}%</h4>
+                                        <small>Project Completion</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card text-center p-3 bg-light rounded">
+                                        <h4>{{ completed_packages }}/{{ total_packages }}</h4>
+                                        <small>Packages Completed</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card text-center p-3 bg-light rounded">
+                                        <h4>{{ in_progress_packages }}</h4>
+                                        <small>Active Packages</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-card text-center p-3 bg-light rounded">
+                                        <h4>${{ total_contract_value|floatformat:2 }}</h4>
+                                        <small>Total Contract Value</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Recommendations -->
+                        {% if recommendations %}
+                        <div class="mb-4">
+                            <h3 class="text-primary border-bottom pb-2">Recommendations</h3>
+                            <ul class="list-group list-group-flush">
+                                {% for recommendation in recommendations %}
+                                <li class="list-group-item">{{ recommendation }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Footer -->
+                        <div class="mt-5 pt-3 border-top text-center text-muted">
+                            <small>This report was automatically generated based on current project data.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .card-header .text-end { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+}
+.metric-card { border: 1px solid #dee2e6; }
+</style>
+{% endblock %}

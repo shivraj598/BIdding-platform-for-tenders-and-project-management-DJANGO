@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | My Teams{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    <!-- Sidebar -->
+    {% include 'includes/contractor_sidebar.html' %}
+    
+    <!-- Main Content -->
+    <div class="flex-1">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">My Teams</h1>
+                    <p class="text-slate-600 mt-2">Manage teams where you are a member or lead contractor</p>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex flex-wrap gap-4">
+                    <div class="bg-emerald-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Total Teams</p>
+                        <p class="text-xl font-bold text-dark-green">{{ teams.paginator.count }}</p>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">As Lead</p>
+                        <p class="text-xl font-bold text-blue-600">{{ led_teams_count }}</p>
+                    </div>
+                    <div class="bg-amber-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">As Member</p>
+                        <p class="text-xl font-bold text-amber-600">{{ member_teams_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <!-- Search -->
+                <div class="flex-1">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                        <input type="text" placeholder="Search by team name or project..." 
+                               class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none"
+                               id="search-input">
+                    </div>
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="w-full md:w-auto">
+                    <select class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white"
+                            id="status-filter">
+                        <option value="">All Status</option>
+                        <option value="forming">Forming</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="disbanded">Disbanded</option>
+                    </select>
+                </div>
+                
+                <!-- Role Filter -->
+                <div class="w-full md:w-auto">
+                    <select class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white"
+                            id="role-filter">
+                        <option value="">All Roles</option>
+                        <option value="lead">Lead Contractor</option>
+                        <option value="member">Team Member</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teams List -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if teams %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for team in teams %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <!-- Team Header -->
+                    <div class="p-6 border-b border-slate-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ team.name }}</h3>
+                                <p class="text-sm text-slate-600">{{ team.project.title|truncatechars:40 }}</p>
+                            </div>
+                            <span class="text-xs font-medium px-3 py-1 rounded-full 
+                                {% if team.status == 'forming' %}bg-yellow-100 text-yellow-800
+                                {% elif team.status == 'active' %}bg-blue-100 text-blue-800
+                                {% elif team.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif team.status == 'disbanded' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ team.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <!-- Project Info -->
+                        <div class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span>{{ team.project.location|truncatechars:35 }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Team Details -->
+                    <div class="p-6 space-y-4">
+                        <!-- Lead Contractor -->
+                        {% if team.lead_contractor %}
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Lead Contractor</p>
+                            <p class="text-sm font-medium text-slate-800">{{ team.lead_contractor.get_display_name }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Team Members Count -->
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Team Members</p>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
+                                <span class="text-sm text-slate-700">{{ team.members.count }} member{{ team.members.count|pluralize }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Project Duration -->
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Project Timeline</p>
+                            <p class="text-sm text-slate-700">{{ team.project.start_date|date:"M d, Y" }} - {{ team.project.end_date|date:"M d, Y" }}</p>
+                        </div>
+
+                        <!-- Assigned Date -->
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Team Formed</p>
+                            <p class="text-sm text-slate-700">{{ team.assigned_date|date:"M d, Y" }}</p>
+                        </div>
+
+                        <!-- Your Role Badge -->
+                        <div>
+                            {% if team.lead_contractor == user %}
+                                <span class="text-xs font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-800">
+                                    <i data-lucide="crown" class="inline w-3 h-3 mr-1"></i>Lead
+                                </span>
+                            {% else %}
+                                <span class="text-xs font-medium px-3 py-1 rounded-full bg-slate-100 text-slate-800">
+                                    <i data-lucide="user" class="inline w-3 h-3 mr-1"></i>Member
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-6 border-t border-slate-100 flex gap-2">
+                        <a href="{% url 'team_detail' team.id %}" 
+                           class="flex-1 bg-dark-green text-white px-4 py-2.5 rounded-lg text-sm font-medium text-center hover:bg-green-700 transition">
+                            <i data-lucide="eye" class="inline w-4 h-4 mr-1"></i>View
+                        </a>
+                        {% if team.lead_contractor == user %}
+                        <a href="{% url 'team_update' team.id %}" 
+                           class="flex-1 bg-slate-200 text-slate-800 px-4 py-2.5 rounded-lg text-sm font-medium text-center hover:bg-slate-300 transition">
+                            <i data-lucide="edit" class="inline w-4 h-4 mr-1"></i>Edit
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="flex justify-center gap-2 mt-8">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100">First</a>
+                    <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100">Previous</a>
+                {% endif %}
+
+                <span class="px-4 py-2 text-slate-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100">Next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}" class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-100">Last</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
+                    <i data-lucide="users" class="w-8 h-8 text-slate-400"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">No Teams Yet</h3>
+                <p class="text-slate-600 mb-6">You haven't been assigned to any teams yet. When you win bids, you'll be able to form teams with other contractors.</p>
+                <a href="{% url 'my_bids' %}" class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700 transition">
+                    <i data-lucide="arrow-right" class="inline w-4 h-4 mr-2"></i>View My Bids
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Search functionality
+    document.getElementById('search-input').addEventListener('keyup', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('[class*="grid"] > div');
+        
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Filter functionality
+    document.getElementById('status-filter').addEventListener('change', function() {
+        const selectedStatus = this.value.toLowerCase();
+        const cards = document.querySelectorAll('[class*="grid"] > div');
+        
+        cards.forEach(card => {
+            if (!selectedStatus) {
+                card.style.display = '';
+            } else {
+                const statusBadge = card.querySelector('[class*="bg-yellow-100"], [class*="bg-blue-100"], [class*="bg-green-100"], [class*="bg-red-100"]');
+                const shouldShow = statusBadge && statusBadge.textContent.toLowerCase().includes(selectedStatus);
+                card.style.display = shouldShow ? '' : 'none';
+            }
+        });
+    });
+
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+    </div>
+</div>
+{% endblock %}

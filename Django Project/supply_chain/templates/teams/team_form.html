@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit Team{% else %}Create New Team{% endif %} | Leeds Supply Chain{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
+            <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'team_list' %}" class="hover:text-dark-green">Teams</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span class="text-dark-green font-medium">
+                {% if form.instance.pk %}Edit Team{% else %}Create New Team{% endif %}
+            </span>
+        </nav>
+        
+        <!-- Form Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+            <div class="bg-dark-green text-white p-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="bg-white/20 p-3 rounded-xl">
+                        {% if form.instance.pk %}
+                            <i data-lucide="edit" class="w-8 h-8"></i>
+                        {% else %}
+                            <i data-lucide="users" class="w-8 h-8"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">
+                            {% if form.instance.pk %}
+                                Edit Team: {{ form.instance.name }}
+                            {% else %}
+                                Create New Team
+                            {% endif %}
+                        </h1>
+                        <p class="text-emerald-200 mt-1">
+                            {% if form.instance.pk %}
+                                Update team details and assignments
+                            {% else %}
+                                Form a new contractor team for project execution
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project Info Card -->
+            {% if form.instance.project %}
+            <div class="p-6 border-b border-slate-100">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800">{{ form.instance.project.title }}</h3>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600 mt-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="building-2" class="w-4 h-4"></i>
+                                {{ form.instance.project.location }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                Start: {{ form.instance.project.start_date|date:"M d, Y" }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                End: {{ form.instance.project.end_date|date:"M d, Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    <a href="{% url 'project_detail' form.instance.project.id %}" 
+                       class="text-dark-green hover:underline font-medium flex items-center gap-1">
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        View Project
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Team Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <form method="POST" class="space-y-8">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                            <span class="font-medium">Please correct the errors below:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-sm">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Basic Information -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="info" class="w-5 h-5 text-dark-green"></i>
+                        Team Information
+                    </h2>
+                    
+                    <!-- Team Name -->
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Team Name *
+                        </label>
+                        <input type="text" id="{{ form.name.id_for_label }}" name="name" 
+                               value="{{ form.name.value|default:'' }}" required
+                               class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition"
+                               placeholder="e.g., Electrical Works Team Alpha">
+                        {% if form.name.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.name.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">Choose a descriptive name for the team</p>
+                    </div>
+                    
+                    <!-- Project Selection -->
+                    <div>
+                        <label for="{{ form.project.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Project *
+                        </label>
+                        <select id="{{ form.project.id_for_label }}" name="project" required
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white">
+                            <option value="">Select a project</option>
+                            {% for project_option in form.project.field.queryset %}
+                                <option value="{{ project_option.id }}" 
+                                        {% if form.project.value == project_option.id %}selected{% endif %}
+                                        data-location="{{ project_option.location }}"
+                                        data-start="{{ project_option.start_date|date:'M d, Y' }}"
+                                        data-end="{{ project_option.end_date|date:'M d, Y' }}"
+                                        data-budget="{{ project_option.budget_range }}">
+                                    {{ project_option.title }} - {{ project_option.location }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.project.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.project.errors.0 }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Project Details Preview -->
+                        <div id="project-details" class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200 hidden">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p class="text-slate-500">Location</p>
+                                    <p id="project-location" class="font-medium"></p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">Budget Range</p>
+                                    <p id="project-budget" class="font-medium"></p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">Start Date</p>
+                                    <p id="project-start" class="font-medium"></p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">End Date</p>
+                                    <p id="project-end" class="font-medium"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-500">Select the project for which you're forming this team</p>
+                    </div>
+                </div>
+                
+                <!-- Status and Notes -->
+                <div class="space-y-6 pt-6 border-t border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="settings" class="w-5 h-5 text-dark-green"></i>
+                        Team Settings
+                    </h2>
+                    
+                    <!-- Team Status -->
+                    <div>
+                        <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Team Status
+                        </label>
+                        <select id="{{ form.status.id_for_label }}" name="status"
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white">
+                            <option value="">Select status</option>
+                            <option value="forming" {% if form.status.value == 'forming' %}selected{% endif %}>Forming</option>
+                            <option value="active" {% if form.status.value == 'active' %}selected{% endif %}>Active</option>
+                            <option value="completed" {% if form.status.value == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="disbanded" {% if form.status.value == 'disbanded' %}selected{% endif %}>Disbanded</option>
+                        </select>
+                        {% if form.status.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.status.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">Set the current status of the team</p>
+                    </div>
+                    
+                    <!-- Team Notes -->
+                    <div>
+                        <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Additional Notes
+                        </label>
+                        <textarea id="{{ form.notes.id_for_label }}" name="notes" rows="4"
+                                  class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green focus:border-dark-green outline-none transition bg-white"
+                                  placeholder="Enter any additional information about the team...">{{ form.notes.value|default:'' }}</textarea>
+                        {% if form.notes.errors %}
+                            <div class="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">Add any special notes or requirements for this team</p>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end">
+                    <a href="{% if form.instance.pk %}{% url 'team_detail' form.instance.id %}{% else %}{% url 'team_list' %}{% endif %}" 
+                       class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="bg-dark-green text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg transition-all flex items-center gap-2 justify-center">
+                        {% if form.instance.pk %}
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            Update Team
+                        {% else %}
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                            Create Team
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Team Formation Tips -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-dark-green p-2 rounded-lg">
+                        <i data-lucide="target" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-dark-green">Team Focus</h4>
+                </div>
+                <p class="text-sm text-slate-700">Each team is assigned to one project and manages all work packages within that project.</p>
+            </div>
+            
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i data-lucide="git-branch" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-blue-800">Flexible Management</h4>
+                </div>
+                <p class="text-sm text-slate-700">Add or remove team members anytime. Lead contractor is assigned automatically or can be updated later.</p>
+            </div>
+            
+            <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-amber-600 p-2 rounded-lg">
+                        <i data-lucide="users" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-amber-800">Collaboration</h4>
+                </div>
+                <p class="text-sm text-slate-700">Team members can view project details, track progress, and coordinate work on all assigned packages.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Project selection details preview
+    document.addEventListener('DOMContentLoaded', function() {
+        const projectSelect = document.getElementById('{{ form.project.id_for_label }}');
+        const projectDetails = document.getElementById('project-details');
+        
+        if (projectSelect) {
+            projectSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                
+                if (selectedOption.value) {
+                    projectDetails.classList.remove('hidden');
+                    document.getElementById('project-location').textContent = selectedOption.dataset.location || 'N/A';
+                    document.getElementById('project-budget').textContent = selectedOption.dataset.budget || 'N/A';
+                    document.getElementById('project-start').textContent = selectedOption.dataset.start || 'N/A';
+                    document.getElementById('project-end').textContent = selectedOption.dataset.end || 'N/A';
+                } else {
+                    projectDetails.classList.add('hidden');
+                }
+            });
+            
+            // Trigger change on load if a project is already selected
+            if (projectSelect.value) {
+                projectSelect.dispatchEvent(new Event('change'));
+            }
+        }
+        
+        // Auto-focus team name field
+        const teamNameInput = document.getElementById('{{ form.name.id_for_label }}');
+        if (teamNameInput) {
+            teamNameInput.focus();
+        }
+    });
+</script>
+{% endblock %}

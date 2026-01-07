@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Profile{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    {% if user.user_type == 'council' %}
+        {% include 'includes/council_sidebar.html' %}
+    {% elif user.user_type == 'contractor' %}
+        {% include 'includes/contractor_sidebar.html' %}
+    {% endif %}
+    
+    <div class="flex-1">
+        <div class="py-8">
+            <div class="max-w-7xl mx-auto px-4">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            {% if user.user_type == 'council' %}
+                                <a href="{% url 'council_dashboard' %}" class="text-slate-600 hover:text-dark-green transition">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'home' %}" class="text-slate-600 hover:text-dark-green transition">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                                </a>
+                            {% endif %}
+                            <h1 class="text-3xl font-bold text-slate-800">Profile Settings</h1>
+                        </div>
+                        <p class="text-slate-600 mt-2">Manage your account information and preferences</p>
+                    </div>
+                    
+                    <!-- User Role Badge -->
+                    <div class="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg font-medium">
+                        {{ user.get_user_type_display }}
+                    </div>
+                </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Profile Overview -->
+            <div class="space-y-6">
+                <!-- Profile Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div class="text-center">
+                        <!-- Profile Picture -->
+                        <div class="relative inline-block mb-6">
+                            <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg mx-auto">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture.url }}" 
+                                         alt="{{ user.username }}"
+                                         class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full bg-dark-green flex items-center justify-center">
+                                        <i data-lucide="user" class="w-16 h-16 text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Change Picture Button -->
+                            <button onclick="document.getElementById('profile_picture').click()"
+                                    class="absolute bottom-2 right-2 bg-dark-green text-white p-2 rounded-full hover-bg-green transition">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                            </button>
+                            <input type="file" id="profile_picture" name="profile_picture" accept="image/*" 
+                                   class="hidden" onchange="previewImage(this)">
+                        </div>
+                        
+                        <!-- User Info -->
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">
+                            {{ user.get_full_name|default:user.username }}
+                        </h2>
+                        <p class="text-slate-600 mb-4">
+                            {% if user.company_name %}
+                                {{ user.company_name }}
+                            {% else %}
+                                {{ user.email }}
+                            {% endif %}
+                        </p>
+                        
+                        <!-- User Stats -->
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-dark-green">
+                                    {% if user.user_type == 'contractor' %}
+                                        {{ user.bids.count }}
+                                    {% else %}
+                                        {{ user.projects.count }}
+                                    {% endif %}
+                                </p>
+                                <p class="text-sm text-slate-600">
+                                    {% if user.user_type == 'contractor' %}
+                                        Bids
+                                    {% else %}
+                                        Projects
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-dark-green">
+                                    {{ user.experience_years|default:"0" }}
+                                </p>
+                                <p class="text-sm text-slate-600">Years Experience</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Info -->
+                    <div class="mt-8 pt-8 border-t border-slate-100 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-slate-100 p-2 rounded-lg">
+                                <i data-lucide="user" class="w-5 h-5 text-slate-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Username</p>
+                                <p class="font-medium">{{ user.username }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <div class="bg-slate-100 p-2 rounded-lg">
+                                <i data-lucide="mail" class="w-5 h-5 text-slate-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Email</p>
+                                <p class="font-medium">{{ user.email }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <div class="bg-slate-100 p-2 rounded-lg">
+                                <i data-lucide="calendar" class="w-5 h-5 text-slate-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Member Since</p>
+                                <p class="font-medium">{{ user.date_joined|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Account Security -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="shield" class="w-5 h-5 text-dark-green"></i>
+                        Account Security
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <a href="{% url 'password_change' %}" 
+                           class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 p-2 rounded-lg">
+                                    <i data-lucide="key" class="w-4 h-4 text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-800">Change Password</p>
+                                    <p class="text-sm text-slate-500">Update your account password</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+                        </a>
+                        
+                        <div class="p-3 border border-slate-200 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-emerald-100 p-2 rounded-lg">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-800">Two-Factor Authentication</p>
+                                    <p class="text-sm text-slate-500">Add extra security to your account</p>
+                                </div>
+                            </div>
+                            <button class="mt-3 w-full bg-dark-green text-white py-2 rounded-lg font-medium hover-bg-green">
+                                Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Middle Column - Profile Form -->
+            <div class="lg:col-span-2">
+                <!-- Profile Update Form -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="user-pen" class="w-5 h-5 text-dark-green"></i>
+                        Edit Profile Information
+                    </h2>
+                    
+                    <form method="POST" action="{% url 'profile_update' %}" enctype="multipart/form-data" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                                    <span class="font-medium">Please correct the errors below:</span>
+                                </div>
+                                <ul class="list-disc list-inside text-sm">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Personal Information -->
+                        <div class="space-y-6">
+                            <h3 class="text-lg font-bold text-slate-800">Personal Information</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                        First Name
+                                    </label>
+                                    <input type="text" id="{{ form.first_name.id_for_label }}" name="first_name" 
+                                           value="{{ form.first_name.value|default:user.first_name }}"
+                                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                    {% if form.first_name.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                        Last Name
+                                    </label>
+                                    <input type="text" id="{{ form.last_name.id_for_label }}" name="last_name" 
+                                           value="{{ form.last_name.value|default:user.last_name }}"
+                                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                    {% if form.last_name.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                        Email Address
+                                    </label>
+                                    <input type="email" id="{{ form.email.id_for_label }}" name="email" 
+                                           value="{{ form.email.value|default:user.email }}" required
+                                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                    {% if form.email.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                        Phone Number
+                                    </label>
+                                    <input type="tel" id="{{ form.phone.id_for_label }}" name="phone" 
+                                           value="{{ form.phone.value|default:user.phone }}"
+                                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                    {% if form.phone.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Company Information (Contractor Only) -->
+                        {% if user.user_type == 'contractor' %}
+                        <div class="space-y-6 pt-8 border-t border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800">Company Information</h3>
+                            
+                            <div>
+                                <label for="{{ form.company_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                    Company Name
+                                </label>
+                                <input type="text" id="{{ form.company_name.id_for_label }}" name="company_name" 
+                                       value="{{ form.company_name.value|default:user.company_name }}"
+                                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                {% if form.company_name.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ form.company_name.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="{{ form.experience_years.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                        Years of Experience
+                                    </label>
+                                    <input type="number" id="{{ form.experience_years.id_for_label }}" name="experience_years" 
+                                           value="{{ form.experience_years.value|default:user.experience_years }}" min="0"
+                                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">
+                                    {% if form.experience_years.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ form.experience_years.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                                    Company Address
+                                </label>
+                                <textarea id="{{ form.address.id_for_label }}" name="address" rows="3"
+                                          class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none transition">{{ form.address.value|default:user.address }}</textarea>
+                                {% if form.address.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- License Document -->
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">
+                                    Business License Document
+                                </label>
+                                <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-50 transition"
+                                     onclick="document.getElementById('license_document').click()">
+                                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-slate-400 mb-2"></i>
+                                    <p class="text-sm text-slate-600 mb-1">
+                                        {% if user.business_license %}
+                                            Current file: {{ user.business_license.name|cut:"licenses/" }}
+                                        {% else %}
+                                            Click to upload license (PDF, JPG, PNG)
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-slate-500">Max file size: 5MB</p>
+                                </div>
+                                <input type="file" id="license_document" name="license_document" accept=".pdf,.jpg,.jpeg,.png"
+                                       class="hidden" onchange="updateFileName('license_document', 'license-file-name')">
+                                <p id="license-file-name" class="text-sm text-slate-500 mt-2"></p>
+                                {% if form.license_document.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ form.license_document.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end">
+                            <a href="{% url 'home' %}" 
+                               class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="bg-dark-green text-white px-8 py-3 rounded-xl font-bold hover-bg-green shadow-lg transition-all flex items-center gap-2 justify-center">
+                                <i data-lucide="save" class="w-5 h-5"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Account Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if user.user_type == 'contractor' %}
+                    <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                        <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            Bidding Performance
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Total Bids</span>
+                                <span class="font-bold text-dark-green">{{ user.bids.count }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Accepted Bids</span>
+                                <span class="font-bold text-emerald-600">{{ accepted_bids }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Success Rate</span>
+                                <span class="font-bold text-blue-600">
+                                    {% if user.bids.count > 0 %}
+                                        {{ success_rate|floatformat:1 }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Avg. Bid Amount</span>
+                                <span class="font-bold text-dark-green">
+                                    ${{ average_bid|floatformat:0|default:"0" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 rounded-2xl border border-blue-100 p-6">
+                        <h3 class="font-bold text-blue-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="award" class="w-5 h-5"></i>
+                            Project Awards
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Awarded Projects</span>
+                                <span class="font-bold text-emerald-600">{{ awarded_projects }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Active Teams</span>
+                                <span class="font-bold text-blue-600">{{ active_teams }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Total Contract Value</span>
+                                <span class="font-bold text-dark-green">
+                                    ${{ total_contract_value|floatformat:0|default:"0" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                        <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                            <i data-lucide="folder" class="w-5 h-5"></i>
+                            Project Management
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Total Projects</span>
+                                <span class="font-bold text-dark-green">{{ user.projects.count }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Active Projects</span>
+                                <span class="font-bold text-blue-600">{{ active_projects }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Total Bids Received</span>
+                                <span class="font-bold text-amber-600">{{ total_bids_received }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Teams Formed</span>
+                                <span class="font-bold text-emerald-600">{{ teams_formed }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Image preview
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const profilePic = document.querySelector('.w-32.h-32 img') || 
+                                 document.querySelector('.w-32.h-32 div');
+                if (profilePic.tagName === 'IMG') {
+                    profilePic.src = e.target.result;
+                } else {
+                    // Replace the placeholder div with an image
+                    profilePic.outerHTML = `<img src="${e.target.result}" alt="Preview" class="w-full h-full object-cover">`;
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    // File name display
+    function updateFileName(inputId, displayId) {
+        const input = document.getElementById(inputId);
+        const display = document.getElementById(displayId);
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2); // MB
+            
+            if (fileSize > 5) {
+                alert('File size exceeds 5MB limit. Please choose a smaller file.');
+                input.value = '';
+                display.textContent = '';
+                display.className = 'text-sm text-red-500 mt-2';
+                display.textContent = 'File too large (max 5MB)';
+            } else {
+                display.textContent = 'Selected file: ' + file.name + ' (' + fileSize + ' MB)';
+                display.className = 'text-sm text-dark-green font-medium mt-2';
+            }
+        }
+    }
+    
+    // Auto-focus first input
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstInput = document.querySelector('form input[required]');
+        if (firstInput) {
+            firstInput.focus();
+        }
+        
+        // Show current license file if exists
+        const currentLicense = '{{ user.business_license.name|default:"" }}';
+        if (currentLicense) {
+            const display = document.getElementById('license-file-name');
+            if (display) {
+                display.textContent = 'Current file: ' + currentLicense.replace('licenses/', '');
+                display.className = 'text-sm text-dark-green font-medium mt-2';
+            }
+        }
+    });
+</script>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

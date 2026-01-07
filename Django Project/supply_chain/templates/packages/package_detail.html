@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | {{ package.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Package Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+                <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'project_list' %}" class="hover:text-dark-green">Projects</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'project_detail' package.project.id %}" class="hover:text-dark-green">{{ package.project.title|truncatechars:20 }}</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-dark-green font-medium">{{ package.title|truncatechars:30 }}</span>
+            </nav>
+            
+            <!-- Package Title and Actions -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h1 class="text-3xl font-bold text-slate-800">{{ package.title }}</h1>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full 
+                            {% if package.status == 'open' %}bg-emerald-100 text-emerald-800
+                            {% elif package.status == 'in_progress' %}bg-blue-100 text-blue-800
+                            {% elif package.status == 'awarded' %}bg-green-100 text-green-800
+                            {% elif package.status == 'completed' %}bg-purple-100 text-purple-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ package.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="package" class="w-4 h-4"></i>
+                            <span>{{ package.get_package_type_display }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span>Deadline: {{ package.deadline|date:"M d, Y" }}</span>
+                        </div>
+                        {% if package.estimated_cost %}
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span>Estimated: ${{ package.estimated_cost }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="building-2" class="w-4 h-4"></i>
+                            <span>Project: {{ package.project.title }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    {% if user.profile.user_type == 'council' and user == package.project.council %}
+                        <a href="{% url 'package_update' package.id %}" 
+                           class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 flex items-center gap-2">
+                            <i data-lucide="edit" class="w-4 h-4"></i> Edit Package
+                        </a>
+                        <a href="{% url 'bid_review_list' %}?package={{ package.id }}" 
+                           class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                            <i data-lucide="file-check" class="w-4 h-4"></i> Review Bids ({{ package.bids.count }})
+                        </a>
+                    {% elif user.profile.user_type == 'contractor' and package.status == 'open' %}
+                        {% if user_has_bid %}
+                            <a href="{% url 'bid_detail' user_bid.id %}" 
+                               class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-emerald-700 flex items-center gap-2">
+                                <i data-lucide="eye" class="w-4 h-4"></i> View My Bid
+                            </a>
+                        {% else %}
+                            <a href="{% url 'bid_create' package.id %}" 
+                               class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                                <i data-lucide="gavel" class="w-4 h-4"></i> Submit Bid
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    <a href="{% url 'project_detail' package.project.id %}" 
+                       class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Package Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Package Description -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-dark-green"></i>
+                        Package Description
+                    </h2>
+                    <div class="prose max-w-none text-slate-700">
+                        {{ package.description|linebreaks }}
+                    </div>
+                </div>
+                
+                <!-- Bids Overview (Council View) -->
+                {% if user.profile.user_type == 'council' and user == package.project.council %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="gavel" class="w-5 h-5 text-dark-green"></i>
+                            Bids Received
+                            <span class="text-sm font-normal text-slate-500">({{ package.bids.count }})</span>
+                        </h2>
+                        <a href="{% url 'bid_review_list' %}?package={{ package.id }}" 
+                           class="text-dark-green hover:underline font-medium flex items-center gap-1">
+                            Review All Bids
+                        </a>
+                    </div>
+                    
+                    {% if package.bids.exists %}
+                        <div class="space-y-4">
+                            {% for bid in package.bids.all|slice:":3" %}
+                            <div class="border border-slate-200 rounded-xl p-6 hover:bg-slate-50 transition">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                    <div>
+                                        <h3 class="font-bold text-slate-800 mb-1">{{ bid.contractor.profile.company_name|default:bid.contractor.username }}</h3>
+                                        <div class="flex items-center gap-4 text-sm text-slate-600">
+                                            <span class="flex items-center gap-1">
+                                                <i data-lucide="clock" class="w-4 h-4"></i>
+                                                Submitted: {{ bid.submitted_at|date:"M d, Y" }}
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                                Duration: {{ bid.duration_days }} days
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="text-lg font-bold text-dark-green">${{ bid.bid_amount }}</span>
+                                        <span class="text-sm font-medium px-3 py-1 rounded-full 
+                                            {% if bid.status == 'pending' %}bg-amber-100 text-amber-800
+                                            {% elif bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                                            {% elif bid.status == 'rejected' %}bg-red-100 text-red-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ bid.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-slate-600 mb-4 line-clamp-2">{{ bid.proposal_text|truncatechars:150 }}</p>
+                                
+                                <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                                    <div class="text-sm text-slate-500">
+                                        {% if bid.proposal_document %}
+                                            <a href="{{ bid.proposal_document.url }}" target="_blank" 
+                                               class="text-dark-green hover:underline flex items-center gap-1">
+                                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                                View Proposal Document
+                                            </a>
+                                        {% else %}
+                                            <span class="text-slate-400">No document attached</span>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{% url 'bid_review' bid.id %}" 
+                                       class="text-dark-green hover:underline font-medium flex items-center gap-1">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                        Review Bid
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if package.bids.count > 3 %}
+                            <div class="mt-6 text-center">
+                                <a href="{% url 'bid_review_list' %}?package={{ package.id }}" 
+                                   class="inline-block text-dark-green hover:underline font-medium">
+                                    View all {{ package.bids.count }} bids
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+                            <i data-lucide="gavel" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i>
+                            <h3 class="text-lg font-bold text-slate-700 mb-2">No Bids Yet</h3>
+                            <p class="text-slate-600 mb-6">No contractors have submitted bids for this package yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- My Bid (Contractor View) -->
+                {% if user.profile.user_type == 'contractor' and user_has_bid %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5 text-dark-green"></i>
+                        My Bid
+                    </h2>
+                    
+                    <div class="border border-slate-200 rounded-xl p-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 mb-2">Your Submission</h3>
+                                <div class="flex items-center gap-4 text-sm text-slate-600">
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-4 h-4"></i>
+                                        Submitted: {{ user_bid.submitted_at|date:"M d, Y" }}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                                        Duration: {{ user_bid.duration_days }} days
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="text-2xl font-bold text-dark-green">${{ user_bid.bid_amount }}</span>
+                                <span class="text-sm font-medium px-3 py-1 rounded-full 
+                                    {% if user_bid.status == 'pending' %}bg-amber-100 text-amber-800
+                                    {% elif user_bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                                    {% elif user_bid.status == 'rejected' %}bg-red-100 text-red-800
+                                    {% elif user_bid.status == 'withdrawn' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ user_bid.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-medium text-slate-700 mb-2">Proposal</h4>
+                            <div class="prose max-w-none text-slate-700 bg-slate-50 p-4 rounded-lg">
+                                {{ user_bid.proposal_text|linebreaks }}
+                            </div>
+                        </div>
+                        
+                        {% if user_bid.proposal_document %}
+                        <div class="mb-6">
+                            <h4 class="font-medium text-slate-700 mb-2">Attached Document</h4>
+                            <a href="{{ user_bid.proposal_document.url }}" target="_blank" 
+                               class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg transition">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                {{ user_bid.proposal_document.name|cut:"proposals/" }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user_bid.review_notes %}
+                        <div class="mb-6">
+                            <h4 class="font-medium text-slate-700 mb-2">Council Feedback</h4>
+                            <div class="prose max-w-none text-slate-700 bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                                {{ user_bid.review_notes|linebreaks }}
+                            </div>
+                            {% if user_bid.reviewed_at %}
+                                <p class="text-sm text-slate-500 mt-2">
+                                    Reviewed on {{ user_bid.reviewed_at|date:"M d, Y" }}
+                                    {% if user_bid.reviewed_by %}
+                                        by {{ user_bid.reviewed_by.username }}
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex flex-wrap gap-3 pt-6 border-t border-slate-100">
+                            {% if user_bid.status == 'pending' %}
+                                <a href="{% url 'bid_update' user_bid.id %}" 
+                                   class="bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 flex items-center gap-2">
+                                    <i data-lucide="edit" class="w-4 h-4"></i> Edit Bid
+                                </a>
+                                <a href="{% url 'bid_withdraw' user_bid.id %}" 
+                                   class="bg-white border border-red-300 text-red-600 px-4 py-2 rounded-lg font-medium hover:bg-red-50 flex items-center gap-2">
+                                    <i data-lucide="x-circle" class="w-4 h-4"></i> Withdraw Bid
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'my_bids' %}" 
+                               class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 flex items-center gap-2">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to My Bids
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Right Column - Sidebar -->
+            <div class="space-y-6">
+                <!-- Package Stats -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Package Overview</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Work Type</span>
+                            <span class="font-medium">{{ package.get_package_type_display }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Status</span>
+                            <span class="font-medium">{{ package.get_status_display }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Bidding Deadline</span>
+                            <span class="font-medium">{{ package.deadline|date:"M d, Y" }}</span>
+                        </div>
+                        {% if package.estimated_cost %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Estimated Cost</span>
+                            <span class="font-bold text-dark-green">${{ package.estimated_cost }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Total Bids</span>
+                            <span class="font-bold text-blue-600">{{ package.bids.count }}</span>
+                        </div>
+                        {% if package.team %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Assigned Team</span>
+                            <span class="font-medium text-emerald-600">{{ package.team.name }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-600">Days Remaining</span>
+                            <span class="font-bold {% if days_remaining < 7 %}text-red-600{% else %}text-amber-600{% endif %}">
+                                {{ days_remaining }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-4 h-4"></i>
+                        Project Information
+                    </h3>
+                    <div class="space-y-3">
+                        <h4 class="font-medium text-dark-green">{{ package.project.title }}</h4>
+                        <div class="text-sm text-slate-600">
+                            <p class="flex items-center gap-2 mb-1">
+                                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                {{ package.project.location }}
+                            </p>
+                            <p class="flex items-center gap-2 mb-1">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                {{ package.project.start_date|date:"M d, Y" }} - {{ package.project.end_date|date:"M d, Y" }}
+                            </p>
+                            {% if package.project.budget_range %}
+                            <p class="flex items-center gap-2">
+                                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                                {{ package.project.budget_range }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'project_detail' package.project.id %}" 
+                           class="inline-block mt-2 text-dark-green hover:underline text-sm font-medium">
+                            View Full Project Details
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Council Information -->
+                <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-6">
+                    <h3 class="font-bold text-dark-green mb-4 flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>
+                        Council Contact
+                    </h3>
+                    <div class="space-y-3">
+                        <p class="font-medium">{{ package.project.council.profile.company_name|default:package.project.council.username }}</p>
+                        {% if package.project.council.email %}
+                            <div class="flex items-center gap-2 text-sm text-slate-600">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                {{ package.project.council.email }}
+                            </div>
+                        {% endif %}
+                        {% if package.project.council.profile.phone %}
+                            <div class="flex items-center gap-2 text-sm text-slate-600">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                {{ package.project.council.profile.phone }}
+                            </div>
+                        {% endif %}
+                        {% if user.profile.user_type == 'contractor' %}
+                        <p class="text-sm text-slate-500 mt-2">
+                            For package-specific inquiries, contact the council directly.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'project_detail' package.project.id %}" 
+                           class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                            <i data-lucide="arrow-left" class="w-5 h-5 text-dark-green"></i>
+                            Back to Project
+                        </a>
+                        
+                        {% if user.profile.user_type == 'council' and user == package.project.council %}
+                            <a href="{% url 'package_update' package.id %}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="edit" class="w-5 h-5 text-dark-green"></i>
+                                Edit Package
+                            </a>
+                            <a href="{% url 'bid_review_list' %}?package={{ package.id }}" 
+                               class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                <i data-lucide="file-check" class="w-5 h-5 text-dark-green"></i>
+                                Review Bids ({{ package.bids.count }})
+                            </a>
+                        {% elif user.profile.user_type == 'contractor' %}
+                            {% if user_has_bid %}
+                                <a href="{% url 'bid_detail' user_bid.id %}" 
+                                   class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                    <i data-lucide="eye" class="w-5 h-5 text-dark-green"></i>
+                                    View My Bid
+                                </a>
+                                {% if user_bid.status == 'pending' %}
+                                    <a href="{% url 'bid_update' user_bid.id %}" 
+                                       class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                        <i data-lucide="edit" class="w-5 h-5 text-dark-green"></i>
+                                        Edit My Bid
+                                    </a>
+                                {% endif %}
+                            {% elif package.status == 'open' %}
+                                <a href="{% url 'bid_create' package.id %}" 
+                                   class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg transition">
+                                    <i data-lucide="gavel" class="w-5 h-5 text-dark-green"></i>
+                                    Submit Bid
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Status Legend -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-800 mb-4">Status Legend</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <span class="text-sm text-slate-600">Open for Bids</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span class="text-sm text-slate-600">In Progress</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span class="text-sm text-slate-600">Awarded</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <span class="text-sm text-slate-600">Completed</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-gray-500"></div>
+                            <span class="text-sm text-slate-600">Cancelled</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

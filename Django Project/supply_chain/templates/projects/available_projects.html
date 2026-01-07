@@ -1,0 +1,431 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leeds Supply Chain | Available Projects{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    <!-- Sidebar -->
+    {% include 'includes/contractor_sidebar.html' %}
+    
+    <!-- Main Content -->
+    <div class="flex-1">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">Available Projects</h1>
+                    <p class="text-slate-600 mt-2">Browse and bid on infrastructure projects published by councils</p>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="flex flex-wrap gap-4">
+                    <div class="bg-emerald-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Total Projects</p>
+                        <p class="text-xl font-bold text-dark-green">{{ total_projects }}</p>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Open Packages</p>
+                        <p class="text-xl font-bold text-blue-600">{{ open_packages_count }}</p>
+                    </div>
+                    <div class="bg-amber-50 px-4 py-2 rounded-lg">
+                        <p class="text-sm text-slate-600">Deadline Soon</p>
+                        <p class="text-xl font-bold text-amber-600">{{ deadline_soon_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <form method="GET" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Location Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Location</label>
+                        <select name="location" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="">All Locations</option>
+                            {% for location in locations %}
+                                <option value="{{ location }}" {% if selected_location == location %}selected{% endif %}>
+                                    {{ location }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Package Type Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Work Type</label>
+                        <select name="package_type" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="">All Types</option>
+                            <option value="wiring" {% if selected_package_type == 'wiring' %}selected{% endif %}>Electrical Wiring</option>
+                            <option value="plumbing" {% if selected_package_type == 'plumbing' %}selected{% endif %}>Plumbing</option>
+                            <option value="traffic" {% if selected_package_type == 'traffic' %}selected{% endif %}>Traffic Management</option>
+                            <option value="water" {% if selected_package_type == 'water' %}selected{% endif %}>Water Works</option>
+                            <option value="road" {% if selected_package_type == 'road' %}selected{% endif %}>Road Construction</option>
+                            <option value="sanitation" {% if selected_package_type == 'sanitation' %}selected{% endif %}>Sanitation</option>
+                            <option value="landscaping" {% if selected_package_type == 'landscaping' %}selected{% endif %}>Landscaping</option>
+                            <option value="structural" {% if selected_package_type == 'structural' %}selected{% endif %}>Structural Works</option>
+                            <option value="other" {% if selected_package_type == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort By -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Sort By</label>
+                        <select name="sort" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none bg-white">
+                            <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                            <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                            <option value="deadline" {% if selected_sort == 'deadline' %}selected{% endif %}>Deadline (Soonest)</option>
+                            <option value="-deadline" {% if selected_sort == '-deadline' %}selected{% endif %}>Deadline (Latest)</option>
+                            <option value="estimated_cost" {% if selected_sort == 'estimated_cost' %}selected{% endif %}>Value (Low to High)</option>
+                            <option value="-estimated_cost" {% if selected_sort == '-estimated_cost' %}selected{% endif %}>Value (High to Low)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                            <input type="text" name="search" placeholder="Project title or description..." 
+                                   value="{{ search_query|default:'' }}"
+                                   class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Budget Range -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Budget Range</label>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <input type="number" name="min_budget" placeholder="Min" 
+                                   value="{{ min_budget|default:'' }}"
+                                   class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none"
+                                   min="0">
+                        </div>
+                        <span class="text-slate-500">to</span>
+                        <div class="flex-1">
+                            <input type="number" name="max_budget" placeholder="Max" 
+                                   value="{{ max_budget|default:'' }}"
+                                   class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-dark-green outline-none"
+                                   min="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-slate-600">
+                        Showing {{ projects.count }} of {{ total_projects }} projects
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="reset" onclick="window.location.href='{% url 'available_projects' %}';" 
+                                class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50">
+                            Reset Filters
+                        </button>
+                        <button type="submit" 
+                                class="bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green flex items-center gap-2">
+                            <i data-lucide="filter" class="w-4 h-4"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        {% if projects %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for project in projects %}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <!-- Project Header -->
+                    <div class="p-6 border-b border-slate-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ project.title|truncatechars:50 }}</h3>
+                                <div class="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    {{ project.location }}
+                                </div>
+                            </div>
+                            <span class="text-xs font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                                Published
+                            </span>
+                        </div>
+                        
+                        <!-- Project Description -->
+                        <p class="text-slate-600 text-sm mb-4 line-clamp-2">{{ project.description|truncatechars:120 }}</p>
+                        
+                        <!-- Packages Badges -->
+                        <div class="flex flex-wrap gap-1 mb-4">
+                            {% for package_type in project.package_types|slice:":3" %}
+                                <span class="bg-slate-100 px-2 py-1 rounded text-xs font-medium">{{ package_type }}</span>
+                            {% endfor %}
+                            {% if project.package_types|length > 3 %}
+                                <span class="bg-slate-100 px-2 py-1 rounded text-xs font-medium">+{{ project.package_types|length|add:"-3" }} more</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Project Stats -->
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <p class="text-slate-500">Packages</p>
+                                <p class="font-bold text-dark-green">{{ project.packages.count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Open</p>
+                                <p class="font-bold text-emerald-600">{{ project.open_packages_count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">End Date</p>
+                                <p class="font-medium">{{ project.end_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Project Footer -->
+                    <div class="p-6 bg-slate-50">
+                        <!-- Council Info -->
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="building-2" class="w-4 h-4 text-dark-green"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-slate-800">
+                                    {{ project.council.profile.company_name|default:project.council.username }}
+                                </p>
+                                <p class="text-xs text-slate-500">Council</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <a href="{% url 'project_detail' project.id %}" 
+                               class="flex-1 text-center bg-dark-green text-white px-4 py-2 rounded-lg font-medium hover-bg-green text-sm">
+                                View Details
+                            </a>
+                            {% if project.open_packages_count > 0 %}
+                            <a href="{% url 'project_detail' project.id %}#packages" 
+                               class="flex-1 text-center bg-white border border-dark-green text-dark-green px-4 py-2 rounded-lg font-medium hover:bg-emerald-50 text-sm">
+                                Bid Now
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-4 py-2 bg-dark-green text-white rounded-lg font-medium">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="folder-search" class="w-10 h-10 text-slate-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-2">No Projects Found</h3>
+                <p class="text-slate-600 mb-6 max-w-md mx-auto">
+                    {% if selected_location or selected_package_type or search_query or min_budget or max_budget %}
+                        No projects match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        There are currently no projects available for bidding. Check back later for new opportunities.
+                    {% endif %}
+                </p>
+                <div class="space-x-3">
+                    {% if selected_location or selected_package_type or search_query or min_budget or max_budget %}
+                        <a href="{% url 'available_projects' %}" 
+                           class="inline-block bg-dark-green text-white px-6 py-3 rounded-xl font-medium hover-bg-green">
+                            Clear Filters
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'contractor_dashboard' %}" 
+                       class="inline-block bg-white border border-dark-green text-dark-green px-6 py-3 rounded-xl font-medium hover:bg-emerald-50">
+                        Return to Dashboard
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Bidding Tips -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-8">
+            <h3 class="text-xl font-bold text-dark-green mb-6 flex items-center gap-2">
+                <i data-lucide="lightbulb" class="w-5 h-5"></i>
+                Bidding Success Tips
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-dark-green p-2 rounded-lg">
+                            <i data-lucide="search" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <h4 class="font-bold text-dark-green">Research Thoroughly</h4>
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Review all project documents carefully</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Understand the scope and requirements</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Visit the site if possible</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-dark-green p-2 rounded-lg">
+                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <h4 class="font-bold text-dark-green">Prepare Strong Proposal</h4>
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Include detailed methodology</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Highlight relevant experience</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Provide clear timeline and milestones</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-dark-green p-2 rounded-lg">
+                            <i data-lucide="dollar-sign" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <h4 class="font-bold text-dark-green">Competitive Pricing</h4>
+                    </div>
+                    <ul class="text-sm text-slate-700 space-y-2">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Research market rates</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Include all costs (materials, labor, overhead)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                            <span>Offer value for money</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+    // Auto-submit form on filter change
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterSelects = document.querySelectorAll('select[name="location"], select[name="package_type"], select[name="sort"]');
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+        
+        // Debounced search and budget inputs
+        const searchInput = document.querySelector('input[name="search"]');
+        const minBudgetInput = document.querySelector('input[name="min_budget"]');
+        const maxBudgetInput = document.querySelector('input[name="max_budget"]');
+        
+        let searchTimeout;
+        
+        function submitForm() {
+            const form = document.querySelector('form');
+            if (form) form.submit();
+        }
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(submitForm, 500);
+        });
+        
+        minBudgetInput.addEventListener('blur', submitForm);
+        maxBudgetInput.addEventListener('blur', submitForm);
+        
+        // Validate budget inputs
+        if (minBudgetInput && maxBudgetInput) {
+            minBudgetInput.addEventListener('change', function() {
+                const min = parseFloat(this.value);
+                const max = parseFloat(maxBudgetInput.value);
+                
+                if (min && max && min > max) {
+                    alert('Minimum budget cannot be greater than maximum budget.');
+                    this.value = '';
+                }
+            });
+            
+            maxBudgetInput.addEventListener('change', function() {
+                const min = parseFloat(minBudgetInput.value);
+                const max = parseFloat(this.value);
+                
+                if (min && max && max < min) {
+                    alert('Maximum budget cannot be less than minimum budget.');
+                    this.value = '';
+                }
+            });
+        }
+    });
+</script>
+    </div>
+</div>
+{% endblock %}

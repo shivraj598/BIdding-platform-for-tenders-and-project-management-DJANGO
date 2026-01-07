@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bid Details | Leeds Supply Chain{% endblock %}
+
+{% block content %}
+<div class="flex min-h-screen bg-slate-50">
+    <!-- Sidebar -->
+    {% include 'includes/contractor_sidebar.html' %}
+    
+    <!-- Main Content -->
+    <div class="flex-1">
+    <div class="py-8">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm text-slate-500 mb-8">
+                <a href="{% url 'home' %}" class="hover:text-dark-green">Home</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'contractor_dashboard' %}" class="hover:text-dark-green">Dashboard</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <a href="{% url 'my_bids' %}" class="hover:text-dark-green">My Bids</a>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-dark-green font-medium">Bid Details</span>
+            </nav>
+            
+            <!-- Header -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+                <div class="bg-dark-green text-white p-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-white/20 p-3 rounded-xl">
+                            <i data-lucide="file-text" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold">Bid Details</h1>
+                            <p class="text-emerald-200 mt-1">{{ bid.package.title }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bid Info -->
+                <div class="p-6 border-b border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Bid Amount</p>
+                            <p class="text-2xl font-bold text-dark-green">${{ bid.bid_amount }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Duration</p>
+                            <p class="text-2xl font-bold text-slate-800">{{ bid.duration_days }} days</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Status</p>
+                            <span class="inline-block text-sm font-medium px-3 py-1 rounded-full 
+                                {% if bid.status == 'draft' %}bg-gray-100 text-gray-800
+                                {% elif bid.status == 'submitted' %}bg-blue-100 text-blue-800
+                                {% elif bid.status == 'under_review' %}bg-amber-100 text-amber-800
+                                {% elif bid.status == 'accepted' %}bg-emerald-100 text-emerald-800
+                                {% elif bid.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                {{ bid.get_status_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 mb-1">Submitted</p>
+                            <p class="text-sm font-medium text-slate-800">{{ bid.submitted_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Package Info -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 p-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Package Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-1">Package Title</p>
+                        <p class="text-slate-800">{{ bid.package.title }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-1">Package Type</p>
+                        <p class="text-slate-800">{{ bid.package.get_package_type_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-1">Project</p>
+                        <p class="text-slate-800">{{ bid.package.project.title }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 mb-1">Deadline</p>
+                        <p class="text-slate-800">{{ bid.package.deadline|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                    <p class="text-sm font-medium text-slate-700 mb-2">Description</p>
+                    <p class="text-slate-600">{{ bid.package.description }}</p>
+                </div>
+            </div>
+            
+            <!-- Proposal -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 p-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Your Proposal</h2>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <p class="text-slate-700 whitespace-pre-wrap">{{ bid.proposal_text }}</p>
+                </div>
+                
+                {% if bid.proposal_document %}
+                <div class="mt-6 pt-6 border-t border-slate-100">
+                    <p class="text-sm font-medium text-slate-700 mb-3">Supporting Document</p>
+                    <div class="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file-pdf" class="w-5 h-5 text-red-600"></i>
+                            <span class="text-sm text-slate-800">{{ bid.proposal_document.name|cut:"proposals/" }}</span>
+                        </div>
+                        <a href="{{ bid.proposal_document.url }}" target="_blank" class="text-sm text-emerald-600 hover:underline font-medium">
+                            Download
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-end mb-8">
+                <a href="{% url 'my_bids' %}" 
+                   class="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-center">
+                    Back to My Bids
+                </a>
+                {% if bid.status == 'draft' or bid.status == 'submitted' %}
+                <a href="{% url 'bid_update' bid.id %}" 
+                   class="px-6 py-3 bg-dark-green text-white rounded-xl font-medium hover-bg-green transition text-center">
+                    Edit Bid
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+{% endblock %}

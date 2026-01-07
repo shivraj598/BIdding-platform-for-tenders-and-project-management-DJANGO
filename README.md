@@ -219,11 +219,6 @@ A comprehensive Django-based web application for managing government/council ten
 
 ![Profile Settings](docs/screenshots/profile-settings.png)
 
-### Reports & Analytics
-*Generate and download comprehensive project reports in PDF format*
-
-![Reports Analytics](docs/screenshots/reports-analytics.png)
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:

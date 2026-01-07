@@ -197,6 +197,33 @@ A comprehensive Django-based web application for managing government/council ten
 - **Report** - Generated project reports
 - **Notification** - User notifications
 
+## 📸 Screenshots
+
+### Home Page
+*Streamlined public infrastructure tenders platform with clear call-to-actions*
+
+![Home Page](docs/screenshots/home-page.png)
+
+### Contractor Dashboard
+*Comprehensive dashboard showing bids, available projects, and statistics*
+
+![Contractor Dashboard](docs/screenshots/contractor-dashboard.png)
+
+### Council Dashboard
+*Admin view for managing projects, reviewing bids, and tracking contracts*
+
+![Council Dashboard](docs/screenshots/council-dashboard.png)
+
+### Profile & Settings
+*User profile management with personal and company information*
+
+![Profile Settings](docs/screenshots/profile-settings.png)
+
+### Reports & Analytics
+*Generate and download comprehensive project reports in PDF format*
+
+![Reports Analytics](docs/screenshots/reports-analytics.png)
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:

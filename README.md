@@ -18,6 +18,15 @@ A comprehensive Django-based web application for managing government/council ten
 - [Contributing](#-contributing)
 - [License](#-license)
 
+
+## login credentials
+#council
+username = council1
+pass = sagar@123#
+
+#contractor
+username = contractor1
+password = sagar@123#
 ## ✨ Features
 
 ### For Councils (Government Bodies)

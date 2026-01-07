@@ -1,0 +1,1 @@
+# BIdding-platform-for-tenders-and-project-management-DJANGO
